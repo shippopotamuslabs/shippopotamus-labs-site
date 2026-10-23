@@ -79,8 +79,8 @@ export default function Requests() {
       setFeedback({
         ok: true,
         text: result.id
-          ? `Thank you — your request is in as ${result.id} and is listed publicly below.`
-          : "Thank you — your request is in and will appear in the public list.",
+          ? `Thanks. Your request is in as ${result.id} and is listed publicly below.`
+          : "Thanks. Your request is in and will appear in the public list.",
       });
       setTitle("");
       setDescription("");
@@ -140,7 +140,7 @@ export default function Requests() {
         <div className="empty-note">
           Public requests are opening soon. Until then, email{" "}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with the
-          app name and what you'd like to see — or what's broken.
+          app name and what you'd like to see, or what's broken.
         </div>
       )}
 
@@ -215,7 +215,7 @@ export default function Requests() {
             />
           </label>
           <label>
-            Email <span className="hint">(optional — only used to reply to you; never shown publicly)</span>
+            Email <span className="hint">(optional; only used to reply to you, never shown publicly)</span>
             <input
               type="email"
               value={email}
@@ -247,7 +247,7 @@ export default function Requests() {
             </button>
             {configured === false && (
               <p style={{ color: "var(--muted)", marginTop: 10 }}>
-                Submissions open soon — the email route above works today.
+                Submissions open soon. The email route above works today.
               </p>
             )}
           </div>

@@ -21,12 +21,12 @@ export const APPS: AppInfo[] = [
     blurb:
       "A workout tracker and training log built for people who lift on a program: build your plan, log every set, and watch the history stack up.",
     description: [
-      "Stratum is a workout-logging app for Android. You build (or follow) a training program, check in for the day's session, and log every set as you go — weights, reps, and the gym you're training in.",
-      "Everything is kept as a rich, queryable history, so progress is something you can look at, not something you have to remember.",
+      "Stratum is a workout-logging app for Android. You build (or follow) a training program, check in for the day's session, and log every set as you go: weights, reps, and the gym you're training in.",
+      "Everything is kept as a full, searchable history, so your progress is right there when you want to look at it.",
     ],
     features: [
       {
-        title: "Programs, not just workouts",
+        title: "Structured programs",
         text: "Build structured training programs and reorder lifts as your plan evolves.",
       },
       {
@@ -35,7 +35,7 @@ export const APPS: AppInfo[] = [
       },
       {
         title: "Full history",
-        text: "Every session is saved with its detail — browse by day, month, or year and edit past sessions when you mis-logged.",
+        text: "Every session is saved with its detail. Browse by day, month, or year and edit past sessions when you mis-logged.",
       },
       {
         title: "Gyms and equipment",
@@ -69,15 +69,15 @@ export const APPS: AppInfo[] = [
     name: "Bloviate",
     kind: "Dictation, styled, for Android",
     blurb:
-      "Dictation that talks the way you meant to sound: speak naturally, and get clean text back — plain, or rewritten in a voice you pick.",
+      "Dictation that talks the way you meant to sound: speak naturally, and get clean text back, plain or rewritten in a voice you pick.",
     description: [
       "Bloviate is a dictation app for Android. Transcription runs on your device, so your voice never has to leave your phone just to become text.",
-      "When you want more than a transcript, cloud styles rewrite your dictation in the voice you choose — from crisp and professional to shamelessly theatrical.",
+      "When you want more than a transcript, cloud styles rewrite your dictation in the voice you choose, from crisp and professional to Cicero.",
     ],
     features: [
       {
         title: "On-device transcription",
-        text: "Speech-to-text runs locally on your phone. It is free, it is private, and it works without a connection.",
+        text: "Speech-to-text runs locally on your phone, free and private, and it works without a connection.",
       },
       {
         title: "Cloud styles",
@@ -90,7 +90,7 @@ export const APPS: AppInfo[] = [
     ],
     statusLabel: "In active development",
     status:
-      "Bloviate is in active development and in private testing only — pre-launch. It is not on the Play Store yet.",
+      "Bloviate is in active development and in private testing only, pre-launch. It is not on the Play Store yet.",
     linksNote: "Google Play listing arrives with the public launch.",
     screenshots: [
       {
@@ -113,7 +113,7 @@ export const APPS: AppInfo[] = [
       "An AI assistant that lives on your phone: on-device models up front, your own API keys for the heavy lifting, and encryption that keeps even us out.",
     description: [
       "Enclave is a privacy-first AI assistant for Android. Chat and image generation run on-device; when you want a bigger model, you bring your own API key and Enclave uses it for chat, images, video, and document creation.",
-      "Sync is zero-knowledge: your data is encrypted with a vault password that is never saved in the app, so synced data is unreadable without it — including by the developer.",
+      "Sync is zero-knowledge: your data is encrypted with a vault password that is never saved in the app, so synced data stays unreadable without it, including to the developer.",
     ],
     features: [
       {
@@ -122,11 +122,11 @@ export const APPS: AppInfo[] = [
       },
       {
         title: "Bring your own key",
-        text: "Plug in your own cloud API key for heavier work — chat, images, video, and documents — under your control and your bill.",
+        text: "Plug in your own cloud API key for heavier work (chat, images, video, and documents), under your control and on your bill.",
       },
       {
         title: "Zero-knowledge encryption",
-        text: "Synced data is unreadable without your vault password, including by the developer. There is nothing to leak because there is nothing to read.",
+        text: "Synced data is unreadable without your vault password, including by the developer. Sync stores ciphertext only, and the password itself is never saved.",
       },
       {
         title: "Local speech-to-text",
@@ -135,7 +135,7 @@ export const APPS: AppInfo[] = [
     ],
     statusLabel: "In development",
     status:
-      "Enclave is in development. The plan: release it as a public repository anyone can build and install themselves, with alternative app stores a possibility after that. One deliberate choice: Enclave is not coming to Google Play — its AI policy and compliance burden is exactly what an app like this shouldn't have to carry.",
+      "Enclave is in development. The plan: release it as a public repository anyone can build and install themselves, with alternative app stores a possibility after that. One deliberate choice: Enclave is not coming to Google Play. Its AI policy and compliance burden is exactly what an app like this shouldn't have to carry.",
     linksNote:
       "The repository link will live here when the code goes public. Enclave is deliberately not coming to Google Play.",
     screenshots: [

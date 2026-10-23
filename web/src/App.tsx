@@ -17,11 +17,11 @@ const NAV: { to: string; label: string }[] = [
 
 const TITLES: Record<string, string> = {
   "/": "Shippopotamus Labs",
-  "/stratum": "Stratum — Shippopotamus Labs",
-  "/bloviate": "Bloviate — Shippopotamus Labs",
-  "/enclave": "Enclave — Shippopotamus Labs",
-  "/requests": "Requests — Shippopotamus Labs",
-  "/contact": "Contact — Shippopotamus Labs",
+  "/stratum": "Stratum · Shippopotamus Labs",
+  "/bloviate": "Bloviate · Shippopotamus Labs",
+  "/enclave": "Enclave · Shippopotamus Labs",
+  "/requests": "Requests · Shippopotamus Labs",
+  "/contact": "Contact · Shippopotamus Labs",
 };
 
 export default function App() {

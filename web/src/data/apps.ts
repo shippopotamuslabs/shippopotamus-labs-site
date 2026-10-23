@@ -92,6 +92,18 @@ export const APPS: AppInfo[] = [
     status:
       "Bloviate is in active development and in private testing only — pre-launch. It is not on the Play Store yet.",
     linksNote: "Google Play listing arrives with the public launch.",
+    screenshots: [
+      {
+        src: "/screenshots/bloviate/styles.png",
+        alt: "Bloviate style picker, from Polish to the philosophers",
+        caption: "Styles",
+      },
+      {
+        src: "/screenshots/bloviate/setup.png",
+        alt: "Bloviate setup: bubble look and on-device voice models",
+        caption: "Setup",
+      },
+    ],
   },
   {
     slug: "enclave",

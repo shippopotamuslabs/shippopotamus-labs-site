@@ -48,14 +48,14 @@ export const APPS: AppInfo[] = [
     linksNote: "Google Play listing arrives with the public launch.",
     screenshots: [
       {
-        src: "/screenshots/stratum/dashboard.png",
-        alt: "Stratum dashboard",
-        caption: "Dashboard",
+        src: "/screenshots/stratum/workout.png",
+        alt: "Logging a workout in Stratum",
+        caption: "Logging a workout",
       },
       {
         src: "/screenshots/stratum/programs.png",
-        alt: "Stratum programs screen",
-        caption: "Programs",
+        alt: "Stratum program screen",
+        caption: "Program",
       },
       {
         src: "/screenshots/stratum/history.png",

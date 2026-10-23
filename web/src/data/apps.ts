@@ -126,6 +126,28 @@ export const APPS: AppInfo[] = [
       "Enclave is in development. The plan: release it as a public repository anyone can build and install themselves, with alternative app stores a possibility after that. One deliberate choice: Enclave is not coming to Google Play — its AI policy and compliance burden is exactly what an app like this shouldn't have to carry.",
     linksNote:
       "The repository link will live here when the code goes public. Enclave is deliberately not coming to Google Play.",
+    screenshots: [
+      {
+        src: "/screenshots/enclave/home.png",
+        alt: "Enclave home screen with chats, Studio, and Gallery",
+        caption: "Home",
+      },
+      {
+        src: "/screenshots/enclave/chat.png",
+        alt: "Chatting with a model inside Enclave",
+        caption: "Chat",
+      },
+      {
+        src: "/screenshots/enclave/studio.png",
+        alt: "Enclave Studio settings with visual style presets",
+        caption: "Studio",
+      },
+      {
+        src: "/screenshots/enclave/image.png",
+        alt: "Image generation in Enclave: a hippopotamus rapidly shipping code",
+        caption: "Image generation",
+      },
+    ],
   },
 ];
 

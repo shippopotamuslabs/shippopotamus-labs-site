@@ -33,6 +33,7 @@ import (
 	"net/mail"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -47,6 +48,7 @@ type config struct {
 	linearAPIKey string
 	linearTeamID string
 	port         string
+	dailyLimit   int
 }
 
 func loadConfig() config {
@@ -54,10 +56,20 @@ func loadConfig() config {
 	if port == "" {
 		port = "8080"
 	}
+	// Global ceiling on submissions per UTC day, across all IPs.
+	// Per-IP limits do not stop a distributed flood from filling
+	// Linear with junk; this does. Far above legitimate volume.
+	dailyLimit := 50
+	if v := os.Getenv("DAILY_SUBMISSION_LIMIT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			dailyLimit = n
+		}
+	}
 	return config{
 		linearAPIKey: os.Getenv("LINEAR_API_KEY"),
 		linearTeamID: os.Getenv("LINEAR_TEAM_ID"),
 		port:         port,
+		dailyLimit:   dailyLimit,
 	}
 }
 
@@ -303,6 +315,43 @@ func (rl *rateLimiter) allow(ip string) bool {
 	return true
 }
 
+// dailyCap counts successful submissions per UTC day. Only real
+// creations count: failed validation and honeypot hits never reach
+// it, and a Linear outage does not burn the day's budget. In-memory
+// and per-instance, like the rate limiter; the Cloud Run max-
+// instances cap bounds how far the true ceiling can multiply.
+type dailyCap struct {
+	mu    sync.Mutex
+	day   string
+	count int
+	limit int
+}
+
+func newDailyCap(limit int) *dailyCap {
+	return &dailyCap{limit: limit}
+}
+
+func todayUTC() string { return time.Now().UTC().Format("2006-01-02") }
+
+func (d *dailyCap) reached() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.day != todayUTC() {
+		return false
+	}
+	return d.count >= d.limit
+}
+
+func (d *dailyCap) record() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.day != todayUTC() {
+		d.day = todayUTC()
+		d.count = 0
+	}
+	d.count++
+}
+
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		if ip, _, _ := strings.Cut(xff, ","); ip != "" {
@@ -319,6 +368,7 @@ type server struct {
 	linear *linearClient // nil when unconfigured
 	labels *labelCache
 	submit *rateLimiter
+	daily  *dailyCap
 }
 
 type publicRequest struct {
@@ -507,6 +557,10 @@ func (s *server) handleSubmitRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if s.daily.reached() {
+		writeErr(w, http.StatusTooManyRequests, "the daily submission limit is reached; try again tomorrow or email support@shippopotamuslabs.com")
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
@@ -553,6 +607,7 @@ func (s *server) handleSubmitRequest(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadGateway, "could not file the request right now")
 		return
 	}
+	s.daily.record()
 	writeJSON(w, http.StatusCreated, map[string]string{"id": data.IssueCreate.Issue.Identifier})
 }
 
@@ -581,6 +636,7 @@ func main() {
 		cfg:    cfg,
 		labels: &labelCache{},
 		submit: newRateLimiter(5, time.Hour),
+		daily:  newDailyCap(cfg.dailyLimit),
 	}
 	if cfg.configured() {
 		s.linear = newLinearClient(cfg.linearAPIKey)

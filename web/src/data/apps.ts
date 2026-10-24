@@ -19,19 +19,35 @@ export const APPS: AppInfo[] = [
     name: "Stratum",
     kind: "Workout tracker for Android",
     blurb:
-      "A workout tracker and training log built for people who lift on a program: build your plan, log every set, and watch the history stack up.",
+      "A workout tracker that recommends every set: the weight and the reps, computed from your past sessions and adjusted mid-workout as your performance changes.",
     description: [
-      "Stratum is a workout-logging app for Android. You build (or follow) a training program, check in for the day's session, and log every set as you go: weights, reps, and the gym you're training in.",
-      "Everything is kept as a full, searchable history, so your progress is right there when you want to look at it.",
+      "Stratum is a workout tracker for Android with a recommendation engine at its center. It tells you the weight and the reps for every set, computed from your past performance. Inside a session it keeps watching: log a set and the recommendation for the next one adjusts, using a fatigue decay model it computes from how your performance falls off as you train.",
+      "The progression runs itself. Stratum uses double progression and linear progression to raise your weights when your performance earns it. Its program generator builds whole programs with Google OR-Tools, a constraint solver, around the days you train and the equipment your gym has. Every 20 workouts, coaching insights review all of your performance and recommend swapping lifts that have gone stale and raising or cutting volume where the numbers point.",
     ],
     features: [
       {
-        title: "Structured programs",
-        text: "Build structured training programs and reorder lifts as your plan evolves.",
+        title: "Recommends every set",
+        text: "Weight and reps for each set, computed from your past performance. Log a set and later recommendations in the same session adjust to what you just did, with fatigue decay tracked across the workout.",
       },
       {
-        title: "Fast set-by-set logging",
-        text: "Log sets as you train, with a daily check-in that starts the right session.",
+        title: "Progression that runs itself",
+        text: "Double progression and linear progression raise the weight automatically when your performance earns the increase.",
+      },
+      {
+        title: "Programs, generated for you",
+        text: "The program generator builds your program with Google OR-Tools, a constraint solver, around your training days and the equipment at your gym.",
+      },
+      {
+        title: "Coaching insights every 20 workouts",
+        text: "A review of all your performance across every lift. It recommends swapping out lifts that have gone stale and increasing or decreasing volume based on your numbers.",
+      },
+      {
+        title: "Dashboard metrics",
+        text: "Muscle group performance and per-lift performance on the dashboard. The recommendations run on these same numbers.",
+      },
+      {
+        title: "Structured programs",
+        text: "Build structured training programs and reorder lifts as your plan evolves.",
       },
       {
         title: "Full history",

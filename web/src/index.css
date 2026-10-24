@@ -2,7 +2,12 @@
    bg-base #0D0E11, surfaces stepped by lightness (#181A20 / #1F222A /
    #272A33), text #EDEEF0 / #A1A5B0, indigo accent #7A7CFF, full-pill
    buttons. No pure black, no pure white, no external fonts, no
-   tracking. */
+   tracking.
+
+   Depth system: hairline borders (8% white) instead of full-strength
+   gray outlines, one soft shadow scale for anything elevated, and a
+   single indigo glow at the top of the page. Separation comes from
+   spacing and type first; boxes are the last resort. */
 
 :root {
   --bg: #0d0e11;
@@ -14,12 +19,20 @@
   --faint: #858994;
   --accent: #7a7cff;
   --accent-ink: #0d0e11;
-  --border: #272a33;
+  --line: rgba(237, 238, 240, 0.08);
+  --line-strong: rgba(237, 238, 240, 0.15);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 18px 44px rgba(0, 0, 0, 0.32);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px rgba(0, 0, 0, 0.26);
+  --shadow-shot: 0 2px 6px rgba(0, 0, 0, 0.4), 0 34px 68px rgba(0, 0, 0, 0.52);
   --radius: 20px;
 }
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(122, 124, 255, 0.35);
 }
 
 html {
@@ -28,13 +41,20 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: radial-gradient(
+    1100px 520px at 50% -120px,
+    rgba(122, 124, 255, 0.09),
+    transparent 70%
+  );
+  background-repeat: no-repeat;
   color: var(--text);
   font-family:
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -52,15 +72,15 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(13, 14, 17, 0.88);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
+  background: rgba(13, 14, 17, 0.82);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
 }
 
 .site-header-inner {
-  max-width: 1080px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 14px 20px;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -71,7 +91,7 @@ a:hover {
   color: var(--text);
   font-weight: 700;
   font-size: 1.05rem;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   margin-right: auto;
 }
 
@@ -95,7 +115,7 @@ a:hover {
 
 .main-nav a:hover {
   color: var(--text);
-  background: var(--surface-2);
+  background: rgba(237, 238, 240, 0.05);
   text-decoration: none;
 }
 
@@ -103,23 +123,24 @@ a:hover {
   color: var(--accent-ink);
   background: var(--accent);
   font-weight: 600;
+  box-shadow: 0 4px 16px rgba(122, 124, 255, 0.3);
 }
 
 .page {
-  max-width: 1080px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px 72px;
+  padding: 0 24px 80px;
 }
 
 .site-footer {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
   margin-top: 24px;
 }
 
 .site-footer-inner {
-  max-width: 1080px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 28px 20px 40px;
+  padding: 28px 24px 40px;
   display: flex;
   gap: 12px 32px;
   flex-wrap: wrap;
@@ -137,30 +158,32 @@ a:hover {
 /* ---------- shared blocks ---------- */
 
 .hero {
-  padding: 72px 0 24px;
-  max-width: 720px;
+  padding: 88px 0 28px;
+  max-width: 760px;
 }
 
 .eyebrow {
   color: var(--accent);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  margin: 0 0 14px;
+  margin: 0 0 16px;
 }
 
 h1 {
-  font-size: clamp(2.1rem, 5.5vw, 3.2rem);
-  line-height: 1.12;
-  margin: 0 0 18px;
-  letter-spacing: -0.01em;
+  font-size: clamp(2.4rem, 6vw, 3.9rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin: 0 0 20px;
+  letter-spacing: -0.025em;
 }
 
 h2 {
-  font-size: 1.55rem;
+  font-size: 1.65rem;
+  font-weight: 700;
   margin: 0 0 10px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 h3 {
@@ -170,7 +193,8 @@ h3 {
 
 .lede {
   color: var(--muted);
-  font-size: 1.13rem;
+  font-size: 1.2rem;
+  line-height: 1.55;
   margin: 0;
 }
 
@@ -184,11 +208,12 @@ h3 {
   border: none;
   font-size: 1rem;
   cursor: pointer;
+  box-shadow: 0 6px 22px rgba(122, 124, 255, 0.25);
 }
 
 .pill-btn:hover {
   text-decoration: none;
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 
 .pill-btn:disabled {
@@ -199,12 +224,12 @@ h3 {
 
 .ghost-btn {
   display: inline-block;
-  background: var(--surface-2);
+  background: transparent;
   color: var(--text);
   font-weight: 600;
   padding: 10px 22px;
   border-radius: 999px;
-  border: 1px solid var(--surface-3);
+  border: 1px solid var(--line-strong);
   font-size: 0.97rem;
   cursor: pointer;
 }
@@ -213,15 +238,17 @@ h3 {
   text-decoration: none;
   border-color: var(--accent);
   color: var(--accent);
+  background: rgba(122, 124, 255, 0.06);
 }
 
 .status {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 22px;
   color: var(--muted);
   font-size: 0.97rem;
+  box-shadow: var(--shadow-soft);
 }
 
 .status strong {
@@ -253,10 +280,11 @@ h3 {
 
 .app-card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 30px;
-  margin-top: 26px;
+  padding: 34px;
+  margin-top: 28px;
+  box-shadow: var(--shadow-card);
 }
 
 .app-card-head {
@@ -282,13 +310,20 @@ h3 {
   max-width: 640px;
 }
 
+/* Inside a card the status stops being a second box: it is the
+   card's footer strip, separated by a hairline. */
 .app-card .status {
-  background: var(--surface-2);
-  margin-top: 18px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 18px 0 0;
+  margin-top: 22px;
 }
 
 .app-card-actions {
-  margin-top: 20px;
+  margin-top: 22px;
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
@@ -296,7 +331,7 @@ h3 {
 
 .follow {
   text-align: center;
-  padding: 64px 20px 8px;
+  padding: 72px 20px 8px;
 }
 
 .follow p {
@@ -308,41 +343,53 @@ h3 {
 /* ---------- app pages ---------- */
 
 .app-hero {
-  padding: 56px 0 8px;
-  max-width: 720px;
+  padding: 72px 0 8px;
+  max-width: 760px;
 }
 
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 14px;
-  margin-top: 22px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
 .feature {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px;
   color: var(--muted);
   font-size: 0.97rem;
+  box-shadow: var(--shadow-soft);
 }
 
 .feature strong {
   color: var(--text);
   display: block;
-  margin-bottom: 4px;
+  font-size: 1.03rem;
+  margin-bottom: 5px;
 }
 
 .section {
-  margin-top: 44px;
+  margin-top: 52px;
 }
 
+/* The screenshots get a stage: a soft indigo pool of light behind
+   them and a real shadow under each shot, so they read as product
+   photography instead of pasted files. */
 .shots {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-top: 18px;
+  gap: 22px;
+  margin-top: 20px;
+  padding: 30px 28px 14px;
+  border-radius: 24px;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 36%,
+    rgba(122, 124, 255, 0.13),
+    transparent 72%
+  );
 }
 
 .shots figure {
@@ -351,16 +398,16 @@ h3 {
 
 .shots img {
   width: 100%;
-  border-radius: 16px;
-  border: 1px solid var(--border);
+  border-radius: 18px;
   display: block;
+  box-shadow: var(--shadow-shot);
 }
 
 .shots figcaption {
   color: var(--faint);
   font-size: 0.85rem;
   text-align: center;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 /* ---------- requests ---------- */
@@ -387,7 +434,7 @@ select,
 input,
 textarea {
   background: var(--surface-2);
-  border: 1px solid var(--surface-3);
+  border: 1px solid var(--line-strong);
   color: var(--text);
   border-radius: 12px;
   padding: 10px 14px;
@@ -413,9 +460,10 @@ textarea:focus {
 
 .request-item {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-soft);
 }
 
 .request-item .req-title {
@@ -434,22 +482,24 @@ textarea:focus {
 
 .empty-note {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
   color: var(--muted);
   margin-top: 18px;
+  box-shadow: var(--shadow-soft);
 }
 
 .req-form {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 26px;
+  padding: 28px;
   margin-top: 22px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-shadow: var(--shadow-card);
 }
 
 .req-form label {
@@ -477,6 +527,12 @@ textarea:focus {
   .req-form .row {
     grid-template-columns: 1fr;
   }
+  .app-card {
+    padding: 26px 22px;
+  }
+  .shots {
+    padding: 20px 14px 8px;
+  }
 }
 
 .form-msg {
@@ -486,14 +542,14 @@ textarea:focus {
 }
 
 .form-msg.ok {
-  background: var(--surface-2);
-  border: 1px solid var(--accent);
+  background: rgba(122, 124, 255, 0.08);
+  border: 1px solid rgba(122, 124, 255, 0.45);
   color: var(--text);
 }
 
 .form-msg.err {
   background: var(--surface-2);
-  border: 1px solid var(--surface-3);
+  border: 1px solid var(--line-strong);
   color: var(--muted);
 }
 
@@ -512,21 +568,22 @@ textarea:focus {
 .contact-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  gap: 16px;
   margin-top: 24px;
 }
 
 .contact-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
   color: var(--muted);
+  box-shadow: var(--shadow-soft);
 }
 
 .contact-card strong {
   color: var(--text);
   display: block;
   margin-bottom: 6px;
-  font-size: 1.02rem;
+  font-size: 1.03rem;
 }

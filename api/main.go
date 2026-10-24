@@ -252,19 +252,30 @@ func writeErr(w http.ResponseWriter, status int, msg string) {
 
 // ---------- CORS ----------
 
-// The frontend is served from the apex domain (and www) and calls
-// this API cross-origin; the Vite dev server is allowed for local
-// development.
+// The frontend is served from the pages.dev origin today and from
+// the apex domain (and www) once its DNS lands; the Vite dev server
+// is allowed for local development. Per-deploy Pages preview URLs
+// (*.shippopotamus-labs.pages.dev) are allowed by suffix: only this
+// Pages project can mint names under it.
 var corsOrigins = map[string]bool{
-	"https://shippopotamuslabs.com":     true,
-	"https://www.shippopotamuslabs.com": true,
-	"http://localhost:5173":             true, // Vite dev
+	"https://shippopotamus-labs.pages.dev": true,
+	"https://shippopotamuslabs.com":        true,
+	"https://www.shippopotamuslabs.com":    true,
+	"http://localhost:5173":                true, // Vite dev
+}
+
+func corsAllowed(origin string) bool {
+	if corsOrigins[origin] {
+		return true
+	}
+	return strings.HasPrefix(origin, "https://") &&
+		strings.HasSuffix(origin, ".shippopotamus-labs.pages.dev")
 }
 
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if corsOrigins[origin] {
+		if corsAllowed(origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")

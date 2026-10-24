@@ -22,7 +22,7 @@ export const APPS: AppInfo[] = [
       "A workout tracker that recommends every set: the weight and the reps, computed from your past sessions and adjusted mid-workout as your performance changes.",
     description: [
       "Stratum is a workout tracker for Android with a recommendation engine at its center. It tells you the weight and the reps for every set, computed from your past performance. Inside a session it keeps watching: log a set and the recommendation for the next one adjusts, using a fatigue decay model it computes from how your performance falls off as you train.",
-      "The progression runs itself. Stratum uses double progression and linear progression to raise your weights when your performance earns it. Its program generator builds whole programs with Google OR-Tools, a constraint solver, around the days you train and the equipment your gym has. Every 20 workouts, coaching insights review all of your performance and recommend swapping lifts that have gone stale and raising or cutting volume where the numbers point.",
+      "The progression runs itself. Stratum uses double progression and linear progression to raise your weights when your performance earns it. Its program generator builds whole programs with Google OR-Tools, a constraint solver, around the days you train and the equipment your gym has. Underneath all of it sit per-lift insights fitted from your training history: a fatigue curve and a progress trend for every lift, recomputed as you log. They drive the recommendations, flag lifts that have stopped progressing, and shape the programs it generates.",
     ],
     features: [
       {
@@ -38,12 +38,12 @@ export const APPS: AppInfo[] = [
         text: "The program generator builds your program with Google OR-Tools, a constraint solver, around your training days and the equipment at your gym.",
       },
       {
-        title: "Coaching insights every 20 workouts",
-        text: "A review of all your performance across every lift. It recommends swapping out lifts that have gone stale and increasing or decreasing volume based on your numbers.",
+        title: "Insights fitted to every lift",
+        text: "A fatigue curve and a progress trend computed from your session history for each lift. They drive the recommendations and the generated programs, and after a workout Stratum can propose shifting a lift's rep range when your measured fatigue says the last set is falling short.",
       },
       {
         title: "Dashboard metrics",
-        text: "Muscle group performance and per-lift performance on the dashboard. The recommendations run on these same numbers.",
+        text: "Muscle group performance and per-lift performance across a 13-week window: volume, estimated one-rep max, and trend for everything you train. The same history drives your recommendations.",
       },
       {
         title: "Structured programs",

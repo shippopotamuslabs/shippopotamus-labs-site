@@ -58,11 +58,11 @@ Renames in Linear are picked up on restart.
 
 ## API
 
-```
-GET  /healthz                  -> 200 {"ok":true}   (also /health; Google intercepts /healthz on run.app)
-GET  /api/requests?app=<stratum|bloviate|enclave>&type=<feature|bug>
-POST /api/requests             {app, type, title, description, email?, honeypot}
-```
+| Endpoint | Takes | Returns |
+| --- | --- | --- |
+| `GET /healthz` |  | `200 {"ok":true}` (also `/health`; Google intercepts `/healthz` on run.app) |
+| `GET /api/requests?app=<stratum\|bloviate\|enclave>&type=<feature\|bug>` | Query filters | The public request list |
+| `POST /api/requests` | `{app, type, title, description, email?, honeypot}` | `201` with the new issue id; behavior details below |
 
 - POST validates: app and type in the allowed sets, title 3 to 120 chars,
   details 10 to 4000 chars, email optional but must parse. A filled honeypot

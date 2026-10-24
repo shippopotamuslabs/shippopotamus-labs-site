@@ -14,18 +14,6 @@ export default function AppPage({ app }: { app: AppInfo }) {
         ))}
       </section>
 
-      <section className="section">
-        <h2>What it does</h2>
-        <div className="feature-grid">
-          {app.features.map((f) => (
-            <div className="feature" key={f.title}>
-              <strong>{f.title}</strong>
-              {f.text}
-            </div>
-          ))}
-        </div>
-      </section>
-
       {app.screenshots && app.screenshots.length > 0 && (
         <section className="section">
           <h2>Screenshots</h2>
@@ -39,6 +27,18 @@ export default function AppPage({ app }: { app: AppInfo }) {
           </div>
         </section>
       )}
+
+      <section className="section">
+        <h2>What it does</h2>
+        <div className="feature-grid">
+          {app.features.map((f) => (
+            <div className="feature" key={f.title}>
+              <strong>{f.title}</strong>
+              {f.text}
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="section">
         <h2>Current status</h2>

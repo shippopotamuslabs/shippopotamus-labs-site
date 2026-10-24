@@ -21,9 +21,8 @@ export const APPS: AppInfo[] = [
     blurb:
       "A workout tracker that recommends every set: the weight and the reps, computed from your past sessions and adjusted mid-workout as your performance changes.",
     description: [
-      "Stratum is a workout tracker for Android with a recommendation engine at its center. It tells you the weight and the reps for every set, computed from your past performance. Inside a session it keeps watching: log a set and the recommendation for the next one adjusts, using a fatigue decay model it computes from how your performance falls off as you train.",
-      "The progression runs itself. Stratum uses double progression and linear progression to raise your weights when your performance earns it. Its program generator builds whole programs with Google OR-Tools, a constraint solver, around the days you train and the equipment your gym has.",
-      "Every 20 completed workouts, a coaching check-in opens on the Programs screen. You rate your recovery overall and flag any muscle that is under-recovered or has joint pain. Stratum combines your answers with your performance trends, how long each lift has been in your program, and your personal volume landmarks, then recommends program changes: swap a stale lift, add a set, or cut sets where recovery says so. You accept or reject each change. Underneath all of it sit per-lift insights fitted from your training history: a fatigue curve and a progress trend for every lift, recomputed as you log, driving the recommendations and shaping the programs it generates.",
+      "Stratum is a workout tracker for Android built around a recommendation engine. It tells you the weight and the reps for every set, computed from your past performance, and it adjusts mid-workout: log a set and the recommendation for the next one moves with what you just did.",
+      "It also generates whole programs around your training days and the equipment your gym has, runs the progression for you, and opens a coaching check-in every 20 workouts that recommends program changes from your recovery answers and your numbers.",
     ],
     features: [
       {

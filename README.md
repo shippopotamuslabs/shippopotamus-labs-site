@@ -135,3 +135,7 @@ pre-launch: no Play listing exists yet, and the pages say the listing arrives
 with the public launch rather than linking anywhere dead. Enclave's public
 repository is a stated plan, not a link. Update `web/src/data/apps.ts` when
 any of that changes. It is the single source of the site's copy.
+
+## License
+
+0BSD license. Do whatever you want with the code. Just don't expect it to work or sue me.

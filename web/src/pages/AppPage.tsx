@@ -57,6 +57,11 @@ export default function AppPage({ app }: { app: AppInfo }) {
           <Link className="ghost-btn" to={`/requests?app=${app.slug}`}>
             Feature requests &amp; bug reports for {app.name}
           </Link>
+          {app.githubUrl && (
+            <a className="ghost-btn" href={app.githubUrl} target="_blank" rel="noreferrer">
+              View {app.name} on GitHub
+            </a>
+          )}
         </div>
       </section>
     </>

@@ -10,6 +10,7 @@ export interface AppInfo {
   statusLabel: string;
   status: string;
   linksNote: string; // Links area text — must reflect reality, no dead links
+  githubUrl?: string; // public source repo — set only when the repo is public
   screenshots?: { src: string; alt: string; caption: string }[];
 }
 
@@ -111,7 +112,9 @@ export const APPS: AppInfo[] = [
     statusLabel: "In active development",
     status:
       "Bloviate is in active development and in private testing only, pre-launch. It is not on the Play Store yet.",
-    linksNote: "Google Play listing arrives with the public launch.",
+    linksNote:
+      "Google Play listing arrives with the public launch. The source is public on GitHub:",
+    githubUrl: "https://github.com/shippopotamuslabs/bloviate",
     screenshots: [
       {
         src: "/screenshots/bloviate/styles.png",

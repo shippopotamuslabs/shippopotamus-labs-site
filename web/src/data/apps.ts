@@ -160,9 +160,10 @@ export const APPS: AppInfo[] = [
     ],
     statusLabel: "In development",
     status:
-      "Enclave is in development. The plan: release it as a public repository anyone can build and install themselves, with alternative app stores a possibility after that. One deliberate choice: Enclave is not coming to Google Play. Its AI policy and compliance burden is exactly what an app like this shouldn't have to carry.",
+      "Enclave is in development. The repository is now public: anyone can build the app from source and install it themselves, with alternative app stores a possibility after that. One deliberate choice: Enclave is not coming to Google Play. Its AI policy and compliance burden is exactly what an app like this shouldn't have to carry.",
     linksNote:
-      "The repository link will live here when the code goes public. Enclave is deliberately not coming to Google Play.",
+      "Get Enclave on GitHub: the public repository is the distribution route — build from source and sideload following the README. Enclave is deliberately not on Google Play.",
+    githubUrl: "https://github.com/shippopotamuslabs/enclave",
     screenshots: [
       {
         src: "/screenshots/enclave/home.png",

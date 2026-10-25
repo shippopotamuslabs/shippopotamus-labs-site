@@ -1,0 +1,13 @@
+# PR-Agent config for shippopotamus-labs-site.
+# This config is fetched via the API by the PR-Agent workflow; the [pr_reviewer]
+# extra_instructions below are injected as the PR_REVIEWER__EXTRA_INSTRUCTIONS
+# environment variable.
+[pr_reviewer]
+extra_instructions = """
+- Stack: React 19 + TypeScript + Vite frontend in web/, Go (stdlib only) API in api/ on Cloud Run, Cloudflare Pages git-integration deploy for web (build: cd web && npm run build, output web/dist). Forge is review-only; never suggest changing deploy mechanics.
+- web/src/data/apps.ts is the single source of site copy; status/links copy must reflect reality — no dead links, no links to listings/repos that do not exist yet.
+- Firewall rule: the site never references or links the voting site; flag any such reference or link as a finding.
+- No tracking, analytics, or cookies on the site; flag additions.
+- Go API is a filtered public window onto Linear: only issues with public+app+type labels, only id/title/app/type/state/date exposed; flag anything widening exposure (descriptions, comments, assignees, internal URLs) or weakening POST validation/rate limits/honeypot.
+- Keep findings evidence-backed and severity-calibrated; skip style and naming nits.
+"""

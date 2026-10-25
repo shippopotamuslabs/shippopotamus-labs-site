@@ -66,7 +66,9 @@ export const APPS: AppInfo[] = [
     statusLabel: "In active development",
     status:
       "Stratum is in active development and currently in internal testing with a small group of testers. The public launch on Google Play has not happened yet.",
-    linksNote: "Google Play listing arrives with the public launch.",
+    linksNote:
+      "Google Play listing arrives with the public launch. The source is public on GitHub:",
+    githubUrl: "https://github.com/shippopotamuslabs/stratum",
     screenshots: [
       {
         src: "/screenshots/stratum/workout.png",

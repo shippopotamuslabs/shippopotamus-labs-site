@@ -34,6 +34,10 @@ concurrency:
 
 jobs:
   deploy:
+    # Production only. A manual dispatch can target any branch that
+    # carries this file; without this guard, dispatching from a feature
+    # branch would publish that branch's code as production.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

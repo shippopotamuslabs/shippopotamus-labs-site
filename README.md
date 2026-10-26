@@ -127,8 +127,10 @@ Web to Cloudflare Pages (GitHub Actions):
 - The workflow builds `web/` (`npm ci`, `npm run build`, output `web/dist`)
   and uploads the result to the `shippopotamus-labs` Pages project with
   Wrangler.
-- Repo secrets: `CLOUDFLARE_API_TOKEN` (Account, Cloudflare Pages, Edit)
-  and `CLOUDFLARE_ACCOUNT_ID`. The build reads `VITE_API_BASE_URL` from the
+- Repo secrets: `CLOUDFLARE_API_TOKEN` (custom token with Account,
+  Cloudflare Pages, Edit plus User, Memberships, Read and User, User
+  Details, Read; Wrangler needs all three) and `CLOUDFLARE_ACCOUNT_ID`.
+  The build reads `VITE_API_BASE_URL` from the
   repo variable of the same name, falling back to the current Cloud Run URL,
   so the shipped bundle calls the real API.
 - The `shippopotamuslabs.com` DNS points at the Pages project. Automatic

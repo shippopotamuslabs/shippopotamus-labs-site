@@ -4,8 +4,14 @@
 # GitLab repo, so GitHub merges never deployed.
 #
 # Required repo secrets (Settings > Secrets and variables > Actions):
-#   CLOUDFLARE_API_TOKEN   token with Account > Cloudflare Pages > Edit
-#                          on the Browntown Development account
+#   CLOUDFLARE_API_TOKEN   custom token on the Browntown Development
+#                          account with all three permissions: Account >
+#                          Cloudflare Pages > Edit, plus User >
+#                          Memberships > Read and User > User Details >
+#                          Read. Wrangler calls the /memberships endpoint
+#                          during auth, so the Pages permission alone
+#                          fails with authentication error 10000 (learned
+#                          on the first run, GLO-18).
 #   CLOUDFLARE_ACCOUNT_ID  that account's ID
 #
 # One-time companion step in the Cloudflare dashboard (Pages project >

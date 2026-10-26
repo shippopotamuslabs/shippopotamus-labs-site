@@ -120,13 +120,20 @@ gcloud run deploy shippopotamus-api \
   --set-env-vars LINEAR_API_KEY=lin_api_...,LINEAR_TEAM_ID=<team-uuid>
 ```
 
-Web to Cloudflare Pages (git-connected):
+Web to Cloudflare Pages (GitHub Actions):
 
-- Build command: `cd web && npm run build`, output dir `web/dist`.
-- Set the build-time environment variable
-  `VITE_API_BASE_URL=https://<the Cloud Run URL>` in the Pages project so the
-  shipped bundle calls the real API.
-- Point the `shippopotamuslabs.com` DNS at the Pages project.
+- `.github/workflows/deploy-pages.yml` deploys on every push to `main`
+  (path-gated to `web/**`) and can be run manually from the Actions tab.
+- The workflow builds `web/` (`npm ci`, `npm run build`, output `web/dist`)
+  and uploads the result to the `shippopotamus-labs` Pages project with
+  Wrangler.
+- Repo secrets: `CLOUDFLARE_API_TOKEN` (Account, Cloudflare Pages, Edit)
+  and `CLOUDFLARE_ACCOUNT_ID`. The build reads `VITE_API_BASE_URL` from the
+  repo variable of the same name, falling back to the current Cloud Run URL,
+  so the shipped bundle calls the real API.
+- The `shippopotamuslabs.com` DNS points at the Pages project. Automatic
+  deployments stay off in the Pages project settings; GitHub is the only
+  deploy path.
 
 ## App status copy
 

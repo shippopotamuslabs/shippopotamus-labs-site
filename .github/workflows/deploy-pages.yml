@@ -1,0 +1,64 @@
+# Deploy the web frontend to Cloudflare Pages on every push to main (GLO-18)
+# (a merged PR is a push to main). Replaces the old GitLab git-integration
+# deploys: the Pages project `shippopotamus-labs` was connected to the
+# GitLab repo, so GitHub merges never deployed.
+#
+# Required repo secrets (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN   token with Account > Cloudflare Pages > Edit
+#                          on the Browntown Development account
+#   CLOUDFLARE_ACCOUNT_ID  that account's ID
+#
+# One-time companion step in the Cloudflare dashboard (Pages project >
+# Settings > Build > Branch control): turn OFF automatic production
+# branch deployments, so a stray GitLab push cannot overwrite a
+# GitHub deploy. Wrangler direct uploads work either way.
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize production deploys: an older commit must never finish
+# after a newer one and take the production alias (the Oct 2026
+# git-integration queue did exactly that).
+concurrency:
+  group: deploy-pages-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build
+        working-directory: web
+        env:
+          # Public by design: this URL is baked into the shipped bundle
+          # and was plain text in the Pages project config. It is a repo
+          # variable so the BLO-181 API move only changes a setting,
+          # not this file; the fallback is the current Cloud Run URL.
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://shippopotamus-api-531671963823.us-east1.run.app' }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web/dist --project-name=shippopotamus-labs --branch=main --commit-hash=${{ github.sha }}

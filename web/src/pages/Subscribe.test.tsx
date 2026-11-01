@@ -211,6 +211,22 @@ describe("Subscribe page", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("shows error for other portal failed-precondition responses", async () => {
+    mockSignedIn();
+    vi.mocked(callCreatePortalSession).mockRejectedValue({
+      code: "functions/failed-precondition",
+      message: "Stripe is not configured.",
+    });
+
+    render(createElement(Subscribe));
+    emitEntitlement({ active: true, expiryTimeMillis: Date.now() + 60_000 });
+
+    fireEvent.click(await screen.findByRole("button", { name: /^manage$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Stripe is not configured.");
+    expect(screen.queryByText(/billing management is not set up/i)).toBeNull();
+  });
+
   it("shows entitlement error with retry when Firestore listen fails", async () => {
     mockSignedIn();
     render(createElement(Subscribe));

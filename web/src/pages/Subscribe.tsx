@@ -38,6 +38,22 @@ export default function Subscribe() {
   const [portalInFlight, setPortalInFlight] = useState(false);
   const [portalOfferSubscribe, setPortalOfferSubscribe] = useState(false);
   const [entitlementRetryToken, setEntitlementRetryToken] = useState(0);
+  const [nowMillis, setNowMillis] = useState(() => Date.now());
+
+  useEffect(() => {
+    const refreshNow = () => setNowMillis(Date.now());
+    const intervalId = window.setInterval(refreshNow, 30_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshNow();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   const authKnown = !configured || user !== undefined;
   const signedIn = Boolean(user);
@@ -53,7 +69,7 @@ export default function Subscribe() {
         entitlementDoc: entitlementDoc ?? null,
         entitlementLoadFailed,
         activating: false,
-        nowMillis: Date.now(),
+        nowMillis,
       }),
     [
       authKnown,
@@ -61,6 +77,7 @@ export default function Subscribe() {
       entitlementLoaded,
       entitlementDoc,
       entitlementLoadFailed,
+      nowMillis,
     ],
   );
 
@@ -78,7 +95,6 @@ export default function Subscribe() {
         setError(
           authErrorMessage(e, "Could not finish Google sign-in after redirect. Try again."),
         );
-        setUser(null);
       }
     });
 
@@ -219,7 +235,7 @@ export default function Subscribe() {
         e,
         "Billing portal did not open. Try again.",
       );
-      if (isPortalNoCustomerError(code)) {
+      if (isPortalNoCustomerError(code, message)) {
         setPortalOfferSubscribe(true);
         setError(null);
       } else if (isCallableUnauthorized(code)) {
@@ -240,7 +256,7 @@ export default function Subscribe() {
 
   const subscribedExpiry =
     entitlementDoc &&
-    isStripeEntitlementSubscribed(entitlementDoc, Date.now()) &&
+    isStripeEntitlementSubscribed(entitlementDoc, nowMillis) &&
     entitlementDoc.expiryTimeMillis != null
       ? entitlementDoc.expiryTimeMillis
       : null;

@@ -91,8 +91,13 @@ export function firebaseCallableErrorMessage(
   return { message: fallback, code: null };
 }
 
-export function isPortalNoCustomerError(code: string | null): boolean {
-  return code === "functions/failed-precondition";
+/** Matches Enclave `handleCreatePortalSession` when no Stripe customer exists. */
+export const PORTAL_NO_STRIPE_CUSTOMER_MESSAGE = "No Stripe customer for this account.";
+
+export function isPortalNoCustomerError(code: string | null, message: string): boolean {
+  return (
+    code === "functions/failed-precondition" && message === PORTAL_NO_STRIPE_CUSTOMER_MESSAGE
+  );
 }
 
 export function isCallableUnauthorized(code: string | null): boolean {

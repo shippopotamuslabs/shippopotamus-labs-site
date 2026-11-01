@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   formatExpiryDate,
+  isPortalNoCustomerError,
   isStripeEntitlementSubscribed,
+  PORTAL_NO_STRIPE_CUSTOMER_MESSAGE,
   resolveSubscribePhase,
 } from "./entitlementState";
 
@@ -110,5 +112,22 @@ describe("resolveSubscribePhase", () => {
 describe("formatExpiryDate", () => {
   it("formats a fixed millis value", () => {
     expect(formatExpiryDate(Date.UTC(2026, 0, 15), "en-US")).toMatch(/January 15, 2026/);
+  });
+});
+
+describe("isPortalNoCustomerError", () => {
+  it("matches Enclave no-customer failed-precondition", () => {
+    expect(
+      isPortalNoCustomerError(
+        "functions/failed-precondition",
+        PORTAL_NO_STRIPE_CUSTOMER_MESSAGE,
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects other failed-precondition messages", () => {
+    expect(
+      isPortalNoCustomerError("functions/failed-precondition", "Stripe is not configured."),
+    ).toBe(false);
   });
 });

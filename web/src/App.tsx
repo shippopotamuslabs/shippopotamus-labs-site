@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { SUPPORT_EMAIL, appBySlug } from "./data/apps";
 import { Link, usePathname } from "./lib/router";
 import AppPage from "./pages/AppPage";
@@ -18,6 +18,18 @@ import {
   StratumPrivacy,
   StratumTerms,
 } from "./pages/StratumLegal";
+
+const Subscribe = lazy(() => import("./pages/Subscribe"));
+
+function subscribeFallback() {
+  return (
+    <section className="app-hero">
+      <p className="lede" role="status">
+        Loading…
+      </p>
+    </section>
+  );
+}
 
 const NAV: { to: string; label: string }[] = [
   { to: "/", label: "Home" },
@@ -75,6 +87,14 @@ const ROUTES: Record<string, Route> = {
   "/stratum/licenses": {
     title: "Open-source licenses — Stratum · Shippopotamus Labs",
     page: <StratumLicenses />,
+  },
+  "/enclave/subscribe": {
+    title: "Enclave subscription · Shippopotamus Labs",
+    page: (
+      <Suspense fallback={subscribeFallback()}>
+        <Subscribe />
+      </Suspense>
+    ),
   },
 };
 

@@ -1,1 +1,29 @@
-{"dependencies":{"react":"^19.2.8","react-dom":"^19.2.8"},"devDependencies":{"@types/node":"^24.13.3","@types/react":"^19.2.18","@types/react-dom":"^19.2.7","@vitejs/plugin-react":"^6.1.1","typescript":"~6.0.2","vite":"^8.3.0"},"name":"shippopotamus-labs-web","private":true,"scripts":{"build":"tsc -b && vite build","dev":"vite","preview":"vite preview"},"type":"module","version":"0.0.0"}
+{
+  "dependencies": {
+    "firebase": "^11.10.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^26.1.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^3.2.4"
+  },
+  "name": "shippopotamus-labs-web",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "type": "module",
+  "version": "0.0.0"
+}

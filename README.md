@@ -22,11 +22,21 @@ shippopotamus-labs-site/
 | `/stratum` `/bloviate` `/enclave` | Per-app pages: description, features, screenshots where real ones exist, status, links, and a door into that app's requests |
 | `/requests` | Public feature requests and bug reports (from Linear, via the API) plus the submission form |
 | `/contact` | Email, Reddit, and a pointer to Requests |
+| `/enclave/subscribe` | Enclave subscription account: Google sign-in against Firebase project `enclave-497101` (same uid as the Android app) |
 
 Routing is client-side with clean URLs. `web/public/_redirects`
 (`/* /index.html 200`) is the Cloudflare Pages SPA fallback. The site runs no
-tracking, no analytics, and no cookies. The only data it collects is what
-someone types into the requests form.
+tracking, no analytics, and no cookies on marketing pages. The only routine
+data collection elsewhere is what someone types into the requests form.
+
+**Firebase Auth on `/enclave/subscribe`:** The Firebase JS SDK loads and
+initializes only when you open `/enclave/subscribe`, not on `/`, `/enclave`, or
+other marketing pages. Google sign-in uses Firebase Authentication; once you
+sign in, Auth persistence is **origin-wide** (first-party cookies and browser
+storage on `shippopotamuslabs.com` until you sign out), even if you browse other
+pages that do not load Firebase. Marketing routes still do not initialize
+Firebase themselves. No Stripe secrets or Firebase Admin SDK ship in the web
+bundle; subscription checkout uses HTTPS callables in a later phase.
 
 ## How public requests work (the Linear label scheme)
 
@@ -95,8 +105,27 @@ cd web && npm install && npm run dev   # http://localhost:5173
 ```
 
 The web app reads the API base from `VITE_API_BASE_URL` (see
-`web/.env.example`). Unset, it defaults to `http://localhost:8080`. To use
-the real Linear flow locally, export a key and team id before `go run .`:
+`web/.env.example`). Unset, it defaults to `http://localhost:8080`.
+
+Firebase web sign-in on `/enclave/subscribe` uses public config only (see
+`web/.env.example`):
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_FIREBASE_API_KEY` | Firebase Web app apiKey |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Auth domain (e.g. `enclave-497101.firebaseapp.com`) |
+| `VITE_FIREBASE_PROJECT_ID` | `enclave-497101` |
+| `VITE_FIREBASE_APP_ID` | Firebase Web app id |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Optional |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Optional |
+
+Set these at **build time** for Cloudflare Pages (repo variable or project env).
+If any required value is missing, `/enclave/subscribe` shows that sign-in is
+not configured yet; the rest of the site still loads.
+
+Run web tests: `cd web && npm test`. Build: `cd web && npm run build`.
+
+To use the real Linear flow locally, export a key and team id before `go run .`:
 
 ```bash
 LINEAR_API_KEY=lin_api_... LINEAR_TEAM_ID=<team-uuid> go run .

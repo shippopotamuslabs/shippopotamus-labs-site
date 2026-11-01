@@ -1,13 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
 import { Link } from "../lib/router";
 import {
+  callCreateCheckoutSession,
+  callCreatePortalSession,
   completeGoogleRedirectSignIn,
   isFirebaseConfigured,
   listenToAuthState,
+  listenToStripeEntitlement,
   signInWithGoogle,
   signOutFirebase,
 } from "../lib/firebase";
+import {
+  firebaseCallableErrorMessage,
+  formatExpiryDate,
+  isCallableUnauthorized,
+  isPortalNoCustomerError,
+  isStripeEntitlementSubscribed,
+  resolveSubscribePhase,
+  type StripeEntitlementDoc,
+} from "../lib/subscribe/entitlementState";
 
 function authErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -16,8 +28,41 @@ function authErrorMessage(error: unknown, fallback: string): string {
 export default function Subscribe() {
   const configured = isFirebaseConfigured();
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [entitlementDoc, setEntitlementDoc] = useState<StripeEntitlementDoc | null | undefined>(
+    undefined,
+  );
+  const [entitlementLoadFailed, setEntitlementLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
+  const [checkoutInFlight, setCheckoutInFlight] = useState(false);
+  const [portalInFlight, setPortalInFlight] = useState(false);
+  const [portalOfferSubscribe, setPortalOfferSubscribe] = useState(false);
+  const [entitlementRetryToken, setEntitlementRetryToken] = useState(0);
+
+  const authKnown = !configured || user !== undefined;
+  const signedIn = Boolean(user);
+  const entitlementLoaded = !signedIn || entitlementDoc !== undefined;
+  const authLoading = configured && user === undefined;
+
+  const phase = useMemo(
+    () =>
+      resolveSubscribePhase({
+        authKnown,
+        signedIn,
+        entitlementLoaded,
+        entitlementDoc: entitlementDoc ?? null,
+        entitlementLoadFailed,
+        activating: false,
+        nowMillis: Date.now(),
+      }),
+    [
+      authKnown,
+      signedIn,
+      entitlementLoaded,
+      entitlementDoc,
+      entitlementLoadFailed,
+    ],
+  );
 
   useEffect(() => {
     if (!configured) {
@@ -64,6 +109,52 @@ export default function Subscribe() {
     };
   }, [configured]);
 
+  useEffect(() => {
+    if (!configured || !user) {
+      setEntitlementDoc(undefined);
+      setEntitlementLoadFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+    let unsubscribeEntitlement: (() => void) | undefined;
+
+    setEntitlementDoc(undefined);
+    setEntitlementLoadFailed(false);
+
+    void listenToStripeEntitlement(user.uid, (doc, err) => {
+      if (cancelled) {
+        return;
+      }
+      if (err) {
+        setEntitlementLoadFailed(true);
+        setEntitlementDoc(undefined);
+        return;
+      }
+      setEntitlementDoc(doc ?? null);
+    })
+      .then((off) => {
+        if (cancelled) {
+          off();
+        } else {
+          unsubscribeEntitlement = off;
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setEntitlementLoadFailed(true);
+          setError(
+            authErrorMessage(e, "Could not load subscription status. Try again."),
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      unsubscribeEntitlement?.();
+    };
+  }, [configured, user, entitlementRetryToken]);
+
   async function handleSignIn() {
     setSigningIn(true);
     setError(null);
@@ -81,12 +172,78 @@ export default function Subscribe() {
 
   async function handleSignOut() {
     setError(null);
+    setPortalOfferSubscribe(false);
     try {
       await signOutFirebase();
     } catch (e) {
       setError(authErrorMessage(e, "Sign-out did not complete. Try again."));
     }
   }
+
+  async function handleSubscribe() {
+    if (checkoutInFlight) {
+      return;
+    }
+    setCheckoutInFlight(true);
+    setError(null);
+    setPortalOfferSubscribe(false);
+    try {
+      const url = await callCreateCheckoutSession();
+      window.location.assign(url);
+    } catch (e) {
+      const { message, code } = firebaseCallableErrorMessage(
+        e,
+        "Checkout did not start. Try again.",
+      );
+      if (isCallableUnauthorized(code)) {
+        setError("Sign in again, then try Subscribe.");
+      } else {
+        setError(message);
+      }
+      setCheckoutInFlight(false);
+    }
+  }
+
+  async function handleManageBilling() {
+    if (portalInFlight) {
+      return;
+    }
+    setPortalInFlight(true);
+    setError(null);
+    setPortalOfferSubscribe(false);
+    try {
+      const url = await callCreatePortalSession();
+      window.location.assign(url);
+    } catch (e) {
+      const { message, code } = firebaseCallableErrorMessage(
+        e,
+        "Billing portal did not open. Try again.",
+      );
+      if (isPortalNoCustomerError(code)) {
+        setPortalOfferSubscribe(true);
+        setError(null);
+      } else if (isCallableUnauthorized(code)) {
+        setError("Sign in again, then try Manage.");
+      } else {
+        setError(message);
+      }
+      setPortalInFlight(false);
+    }
+  }
+
+  function retryEntitlementLoad() {
+    setEntitlementLoadFailed(false);
+    setEntitlementDoc(undefined);
+    setError(null);
+    setEntitlementRetryToken((value) => value + 1);
+  }
+
+  const subscribedExpiry =
+    entitlementDoc &&
+    isStripeEntitlementSubscribed(entitlementDoc, Date.now()) &&
+    entitlementDoc.expiryTimeMillis != null
+      ? entitlementDoc.expiryTimeMillis
+      : null;
 
   return (
     <>
@@ -118,7 +275,7 @@ export default function Subscribe() {
         </section>
       )}
 
-      {configured && user === undefined && (
+      {authLoading && (
         <p className="lede" role="status">
           Checking sign-in status…
         </p>
@@ -146,24 +303,119 @@ export default function Subscribe() {
         </section>
       )}
 
-      {configured && user && (
+      {configured && signedIn && user && (
         <section className="subscribe-panel">
           <div className="contact-card">
             <strong>Signed in</strong>
             <p style={{ margin: "0.75rem 0 0" }}>
               Account id: <code>{user.uid}</code>
             </p>
-            <p style={{ margin: "0.75rem 0 0", color: "var(--muted)" }}>
-              Subscription checkout and management will appear on this page in a
-              later update.
-            </p>
           </div>
-          {error && (
-            <div className="form-msg err" role="alert">
-              {error}
-            </div>
+
+          {phase === "loading" && (
+            <p className="lede" role="status">
+              Loading subscription status…
+            </p>
           )}
-          <button className="ghost-btn" type="button" onClick={() => void handleSignOut()}>
+
+          {phase === "entitlement-error" && (
+            <>
+              <div className="form-msg err" role="alert">
+                Could not load subscription status. Try again.
+              </div>
+              <button className="ghost-btn" type="button" onClick={retryEntitlementLoad}>
+                Retry
+              </button>
+            </>
+          )}
+
+          {phase === "unsubscribed" && (
+            <>
+              <p>You do not have an active subscription.</p>
+              {error && (
+                <div className="form-msg err" role="alert">
+                  {error}
+                </div>
+              )}
+              <button
+                className="pill-btn"
+                type="button"
+                disabled={checkoutInFlight}
+                onClick={() => void handleSubscribe()}
+              >
+                {checkoutInFlight ? "Starting checkout…" : "Subscribe"}
+              </button>
+            </>
+          )}
+
+          {phase === "lapsed" && (
+            <>
+              <p>Your subscription is not active. Subscribe again to restore access.</p>
+              {error && (
+                <div className="form-msg err" role="alert">
+                  {error}
+                </div>
+              )}
+              <button
+                className="pill-btn"
+                type="button"
+                disabled={checkoutInFlight}
+                onClick={() => void handleSubscribe()}
+              >
+                {checkoutInFlight ? "Starting checkout…" : "Subscribe"}
+              </button>
+            </>
+          )}
+
+          {phase === "subscribed" && (
+            <>
+              <p>Your subscription is active.</p>
+              {subscribedExpiry != null && (
+                <p style={{ color: "var(--muted)" }}>
+                  Renews on {formatExpiryDate(subscribedExpiry)}.
+                </p>
+              )}
+              {portalOfferSubscribe ? (
+                <>
+                  <p>
+                    Billing management is not set up for this account yet. Use Subscribe
+                    to start checkout.
+                  </p>
+                  <button
+                    className="pill-btn"
+                    type="button"
+                    disabled={checkoutInFlight}
+                    onClick={() => void handleSubscribe()}
+                  >
+                    {checkoutInFlight ? "Starting checkout…" : "Subscribe"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {error && (
+                    <div className="form-msg err" role="alert">
+                      {error}
+                    </div>
+                  )}
+                  <button
+                    className="pill-btn"
+                    type="button"
+                    disabled={portalInFlight}
+                    onClick={() => void handleManageBilling()}
+                  >
+                    {portalInFlight ? "Opening billing…" : "Manage"}
+                  </button>
+                </>
+              )}
+            </>
+          )}
+
+          <button
+            className="ghost-btn"
+            type="button"
+            style={{ marginTop: "1rem" }}
+            onClick={() => void handleSignOut()}
+          >
             Sign out
           </button>
         </section>

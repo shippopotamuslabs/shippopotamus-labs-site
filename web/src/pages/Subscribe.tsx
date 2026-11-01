@@ -22,12 +22,26 @@ import {
   type StripeEntitlementDoc,
 } from "../lib/subscribe/entitlementState";
 import {
+  clearPersistedCheckoutReturn,
   parseCheckoutReturn,
+  persistCheckoutReturn,
+  readPersistedCheckoutReturn,
   stripCheckoutQueryFromLocation,
 } from "../lib/subscribe/checkoutReturn";
 
 function authErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+function clearCheckoutReturnUiState(setters: {
+  setCheckoutActivating: (value: boolean) => void;
+  setActivatingStartedAtMillis: (value: number | null) => void;
+  setPendingCheckoutSuccess: (value: boolean) => void;
+}) {
+  setters.setCheckoutActivating(false);
+  setters.setActivatingStartedAtMillis(null);
+  setters.setPendingCheckoutSuccess(false);
+  clearPersistedCheckoutReturn();
 }
 
 export default function Subscribe() {
@@ -71,20 +85,27 @@ export default function Subscribe() {
   const authLoading = configured && user === undefined;
 
   useEffect(() => {
-    const checkoutReturn = parseCheckoutReturn(window.location.search);
+    const fromQuery = parseCheckoutReturn(window.location.search);
+    if (fromQuery != null) {
+      persistCheckoutReturn(fromQuery);
+      const nextUrl = stripCheckoutQueryFromLocation(
+        window.location.pathname,
+        window.location.search,
+      );
+      window.history.replaceState(null, "", nextUrl);
+    }
+
+    const checkoutReturn = fromQuery ?? readPersistedCheckoutReturn();
     if (checkoutReturn == null) {
       return;
     }
-    const nextUrl = stripCheckoutQueryFromLocation(
-      window.location.pathname,
-      window.location.search,
-    );
-    window.history.replaceState(null, "", nextUrl);
 
     if (checkoutReturn === "cancel") {
-      setCheckoutActivating(false);
-      setActivatingStartedAtMillis(null);
-      setPendingCheckoutSuccess(false);
+      clearCheckoutReturnUiState({
+        setCheckoutActivating,
+        setActivatingStartedAtMillis,
+        setPendingCheckoutSuccess,
+      });
       setError(null);
       return;
     }
@@ -92,6 +113,19 @@ export default function Subscribe() {
     setPendingCheckoutSuccess(true);
     setError(null);
   }, []);
+
+  useEffect(() => {
+    if (user !== null) {
+      return;
+    }
+    if (user === null) {
+      clearCheckoutReturnUiState({
+        setCheckoutActivating,
+        setActivatingStartedAtMillis,
+        setPendingCheckoutSuccess,
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!pendingCheckoutSuccess || !signedIn) {
@@ -102,6 +136,7 @@ export default function Subscribe() {
     setActivatingStartedAtMillis(Date.now());
     setEntitlementLoadFailed(false);
     setError(null);
+    clearPersistedCheckoutReturn();
   }, [pendingCheckoutSuccess, signedIn]);
 
   useEffect(() => {
@@ -117,10 +152,23 @@ export default function Subscribe() {
     if (nowMillis - activatingStartedAtMillis >= CHECKOUT_ACTIVATING_TIMEOUT_MS) {
       setCheckoutActivating(false);
       setActivatingStartedAtMillis(null);
-      setEntitlementLoadFailed(false);
       setError(null);
+      if (entitlementLoadFailed) {
+        setEntitlementDoc(null);
+      } else if (entitlementDoc === undefined) {
+        setEntitlementDoc(null);
+        setEntitlementLoadFailed(false);
+      } else {
+        setEntitlementLoadFailed(false);
+      }
     }
-  }, [checkoutActivating, activatingStartedAtMillis, entitlementDoc, nowMillis]);
+  }, [
+    checkoutActivating,
+    activatingStartedAtMillis,
+    entitlementDoc,
+    entitlementLoadFailed,
+    nowMillis,
+  ]);
 
   const phase = useMemo(
     () =>
@@ -257,6 +305,11 @@ export default function Subscribe() {
   async function handleSignOut() {
     setError(null);
     setPortalOfferSubscribe(false);
+    clearCheckoutReturnUiState({
+      setCheckoutActivating,
+      setActivatingStartedAtMillis,
+      setPendingCheckoutSuccess,
+    });
     try {
       await signOutFirebase();
     } catch (e) {

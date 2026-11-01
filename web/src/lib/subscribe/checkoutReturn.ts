@@ -4,6 +4,9 @@ export const CHECKOUT_ACTIVATING_TIMEOUT_MS = 60_000;
 
 export type CheckoutReturn = "success" | "cancel";
 
+/** Survives StrictMode remount after the checkout query is stripped from the URL. */
+export const CHECKOUT_RETURN_SESSION_KEY = "enclave-subscribe-checkout-return";
+
 export function parseCheckoutReturn(search: string): CheckoutReturn | null {
   const raw = search.startsWith("?") ? search.slice(1) : search;
   if (!raw) {
@@ -33,4 +36,41 @@ export function isCheckoutActivatingTimedOut(
   timeoutMs = CHECKOUT_ACTIVATING_TIMEOUT_MS,
 ): boolean {
   return nowMillis - activatingStartedAtMillis >= timeoutMs;
+}
+
+export function persistCheckoutReturn(value: CheckoutReturn): void {
+  try {
+    sessionStorage.setItem(CHECKOUT_RETURN_SESSION_KEY, value);
+  } catch {
+    // sessionStorage may be unavailable in some embed contexts
+  }
+}
+
+export function readPersistedCheckoutReturn(): CheckoutReturn | null {
+  try {
+    const value = sessionStorage.getItem(CHECKOUT_RETURN_SESSION_KEY);
+    if (value === "success" || value === "cancel") {
+      return value;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function clearPersistedCheckoutReturn(): void {
+  try {
+    sessionStorage.removeItem(CHECKOUT_RETURN_SESSION_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/** Query param wins; otherwise read a pending value saved before the URL was stripped. */
+export function resolveCheckoutReturn(search: string): CheckoutReturn | null {
+  const fromQuery = parseCheckoutReturn(search);
+  if (fromQuery != null) {
+    return fromQuery;
+  }
+  return readPersistedCheckoutReturn();
 }

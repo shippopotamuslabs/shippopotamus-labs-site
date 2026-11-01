@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
+  CHECKOUT_RETURN_SESSION_KEY,
   CHECKOUT_ACTIVATING_TIMEOUT_MS,
+  clearPersistedCheckoutReturn,
   isCheckoutActivatingTimedOut,
   parseCheckoutReturn,
+  persistCheckoutReturn,
+  readPersistedCheckoutReturn,
+  resolveCheckoutReturn,
   stripCheckoutQueryFromLocation,
 } from "./checkoutReturn";
 
@@ -43,5 +48,33 @@ describe("isCheckoutActivatingTimedOut", () => {
   it("is true at or after the timeout window", () => {
     const start = 1_000;
     expect(isCheckoutActivatingTimedOut(start, start + CHECKOUT_ACTIVATING_TIMEOUT_MS)).toBe(true);
+  });
+});
+
+describe("checkout return sessionStorage", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
+  it("persists and reads success and cancel", () => {
+    persistCheckoutReturn("success");
+    expect(readPersistedCheckoutReturn()).toBe("success");
+    clearPersistedCheckoutReturn();
+    expect(readPersistedCheckoutReturn()).toBeNull();
+  });
+
+  it("resolveCheckoutReturn prefers the query param over session", () => {
+    persistCheckoutReturn("success");
+    expect(resolveCheckoutReturn("?checkout=cancel")).toBe("cancel");
+  });
+
+  it("resolveCheckoutReturn falls back to session when the query is gone", () => {
+    persistCheckoutReturn("success");
+    expect(resolveCheckoutReturn("")).toBe("success");
+    expect(sessionStorage.getItem(CHECKOUT_RETURN_SESSION_KEY)).toBe("success");
   });
 });

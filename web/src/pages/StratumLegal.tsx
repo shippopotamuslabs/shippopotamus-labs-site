@@ -1,12 +1,10 @@
+import { SUPPORT_EMAIL } from "../data/apps";
 import { Link } from "../lib/router";
 import { LegalShell } from "./Legal";
 
 // Migrated 2026-10-25 from stratum-a1a5b.web.app (STR-217). Text carried
 // over as published there; only cross-links moved to the /stratum/* paths.
-// The contact email remains support@shippopotamuslabs.com as in the
-// originals, pending Sean's call on switching it to the Labs address.
-
-const CONTACT_EMAIL = "support@shippopotamuslabs.com";
+// The contact email is the shared SUPPORT_EMAIL, per Sean's STR-217 call.
 
 function StratumFooterLinks() {
   return (
@@ -33,7 +31,7 @@ export function StratumPrivacy() {
       <p>
         Stratum is a workout log and programming companion. For privacy
         questions or data requests, email{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
 
       <h2>2. Information we collect</h2>
@@ -146,7 +144,7 @@ export function StratumPrivacy() {
       </p>
       <p>
         If the in-app control is unavailable or fails, email{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> from the address on
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the address on
         your account and request deletion. We will process reasonable requests
         within a commercially reasonable time (typically within 30 days).
       </p>
@@ -190,7 +188,7 @@ export function StratumPrivacy() {
       <h2>12. Contact</h2>
       <p>
         Privacy questions, access requests, or deletion requests:{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </p>
       <StratumFooterLinks />
     </LegalShell>
@@ -394,7 +392,7 @@ export function StratumTerms() {
       <h2>12. Contact</h2>
       <p>
         Questions about these Terms:{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </p>
       <StratumFooterLinks />
     </LegalShell>
@@ -443,7 +441,7 @@ export function StratumDeleteAccount() {
       <h2>Email request (if you cannot use the app)</h2>
       <ol>
         <li>
-          Email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> from the{" "}
+          Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the{" "}
           <strong>same Google account email</strong> you use to sign in to
           Stratum.
         </li>
@@ -511,7 +509,7 @@ export function StratumDeleteAccount() {
       <h2>Contact</h2>
       <p>
         Deletion and privacy requests:{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
       </p>
       <StratumFooterLinks />
     </LegalShell>
@@ -634,7 +632,7 @@ export function StratumLicenses() {
       <p>
         If you need a more complete dependency inventory or a machine-readable
         license report for a specific Stratum build, email{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
       <StratumFooterLinks />
     </LegalShell>

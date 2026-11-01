@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { SUPPORT_EMAIL } from "../data/apps";
 import { Link } from "../lib/router";
 
@@ -5,10 +6,12 @@ const EFFECTIVE = "October 25, 2026";
 
 function LegalHub({
   kind,
+  itemNoun,
   blurb,
   entries,
 }: {
   kind: string;
+  itemNoun: "privacy policy" | "terms of service";
   blurb: string;
   entries: { app: string; line: string; to?: string }[];
 }) {
@@ -29,7 +32,7 @@ function LegalHub({
                 <>
                   {" "}
                   <Link to={e.to}>
-                    Read the {e.app} {kind === "Privacy policies" ? "privacy policy" : "terms of service"}
+                    Read the {e.app} {itemNoun}
                   </Link>
                   .
                 </>
@@ -51,6 +54,7 @@ export function PrivacyHub() {
   return (
     <LegalHub
       kind="Privacy policies"
+      itemNoun="privacy policy"
       blurb="Each Shippopotamus Labs app has its own privacy policy, written for what that app actually does."
       entries={[
         {
@@ -76,6 +80,7 @@ export function TermsHub() {
   return (
     <LegalHub
       kind="Terms of service"
+      itemNoun="terms of service"
       blurb="Each Shippopotamus Labs app has its own terms, written for that app's service."
       entries={[
         {
@@ -106,7 +111,7 @@ export function LegalShell({
   title: string;
   app?: string;
   effective?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <>
@@ -311,7 +316,10 @@ export function TermsOfService() {
         to produce the styled text. We do not store that text (see the{" "}
         <Link to="/bloviate/privacy">privacy policy</Link>).
       </p>
-      <p>Custom styles you create are yours. Styles you create stay on your device.</p>
+      <p>
+        Custom styles you create are yours. Styles you create are stored with
+        your account and cached on your device.
+      </p>
 
       <h2>AI output</h2>
       <p>

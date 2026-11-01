@@ -69,15 +69,49 @@ export async function getFirebaseAuth(): Promise<Auth | null> {
   return auth;
 }
 
-export async function signInWithGoogle(): Promise<void> {
+const MOBILE_UA_PATTERN = /Android|iPhone|iPad|iPod|Mobile/i;
+
+/** Redirect sign-in for phones and narrow viewports where popups often fail. */
+export function shouldUseGoogleRedirectSignIn(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  if (MOBILE_UA_PATTERN.test(navigator.userAgent)) {
+    return true;
+  }
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+export async function completeGoogleRedirectSignIn(): Promise<User | null> {
+  const firebaseAuth = await getFirebaseAuth();
+  if (!firebaseAuth) {
+    return null;
+  }
+
+  const { getRedirectResult } = await import("firebase/auth");
+  const result = await getRedirectResult(firebaseAuth);
+  return result?.user ?? null;
+}
+
+export type GoogleSignInMode = "popup" | "redirect";
+
+export async function signInWithGoogle(): Promise<GoogleSignInMode> {
   const firebaseAuth = await getFirebaseAuth();
   if (!firebaseAuth) {
     throw new Error("Firebase sign-in is not configured on this site yet.");
   }
 
-  const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
+  const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } =
+    await import("firebase/auth");
   const provider = new GoogleAuthProvider();
+
+  if (shouldUseGoogleRedirectSignIn()) {
+    await signInWithRedirect(firebaseAuth, provider);
+    return "redirect";
+  }
+
   await signInWithPopup(firebaseAuth, provider);
+  return "popup";
 }
 
 export async function signOutFirebase(): Promise<void> {

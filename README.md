@@ -29,12 +29,14 @@ Routing is client-side with clean URLs. `web/public/_redirects`
 tracking, no analytics, and no cookies on marketing pages. The only routine
 data collection elsewhere is what someone types into the requests form.
 
-**Exception — `/enclave/subscribe` only:** Firebase Authentication sets
-first-party cookies and browser storage so Google sign-in can persist on that
-route. Firebase is initialized lazily when you open `/enclave/subscribe`, not
-on `/`, `/enclave`, or other marketing routes. No Stripe secrets or Firebase
-Admin SDK ship in the web bundle; subscription checkout uses HTTPS callables in
-a later phase.
+**Firebase Auth on `/enclave/subscribe`:** The Firebase JS SDK loads and
+initializes only when you open `/enclave/subscribe`, not on `/`, `/enclave`, or
+other marketing pages. Google sign-in uses Firebase Authentication; once you
+sign in, Auth persistence is **origin-wide** (first-party cookies and browser
+storage on `shippopotamuslabs.com` until you sign out), even if you browse other
+pages that do not load Firebase. Marketing routes still do not initialize
+Firebase themselves. No Stripe secrets or Firebase Admin SDK ship in the web
+bundle; subscription checkout uses HTTPS callables in a later phase.
 
 ## How public requests work (the Linear label scheme)
 

@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Link } from "../lib/router";
 import {
+  completeGoogleRedirectSignIn,
   isFirebaseConfigured,
   listenToAuthState,
   signInWithGoogle,
   signOutFirebase,
 } from "../lib/firebase";
+
+function authErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export default function Subscribe() {
   const configured = isFirebaseConfigured();
@@ -23,17 +28,35 @@ export default function Subscribe() {
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
 
+    void completeGoogleRedirectSignIn().catch((e) => {
+      if (!cancelled) {
+        setError(
+          authErrorMessage(e, "Could not finish Google sign-in after redirect. Try again."),
+        );
+        setUser(null);
+      }
+    });
+
     void listenToAuthState((next) => {
       if (!cancelled) {
         setUser(next);
       }
-    }).then((off) => {
-      if (cancelled) {
-        off();
-      } else {
-        unsubscribe = off;
-      }
-    });
+    })
+      .then((off) => {
+        if (cancelled) {
+          off();
+        } else {
+          unsubscribe = off;
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(
+            authErrorMessage(e, "Could not check sign-in status. Try again."),
+          );
+          setUser(null);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -45,12 +68,13 @@ export default function Subscribe() {
     setSigningIn(true);
     setError(null);
     try {
-      await signInWithGoogle();
+      const mode = await signInWithGoogle();
+      if (mode === "redirect") {
+        return;
+      }
+      setSigningIn(false);
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Sign-in did not complete. Try again.";
-      setError(message);
-    } finally {
+      setError(authErrorMessage(e, "Sign-in did not complete. Try again."));
       setSigningIn(false);
     }
   }
@@ -60,9 +84,7 @@ export default function Subscribe() {
     try {
       await signOutFirebase();
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Sign-out did not complete. Try again.";
-      setError(message);
+      setError(authErrorMessage(e, "Sign-out did not complete. Try again."));
     }
   }
 
@@ -75,6 +97,11 @@ export default function Subscribe() {
           Sign in with Google to link this page to your Enclave account. The
           same Google account you use in the Android app gets the same account
           id here.
+        </p>
+        <p className="lede" style={{ marginTop: "1rem" }}>
+          Google sign-in on this page uses Firebase Authentication for this site
+          to link the same account as the Enclave Android app. See our{" "}
+          <Link to="/privacy">privacy policies</Link>.
         </p>
       </section>
 

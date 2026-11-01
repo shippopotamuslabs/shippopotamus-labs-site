@@ -12,6 +12,7 @@ import {
   signOutFirebase,
 } from "../lib/firebase";
 import {
+  CHECKOUT_ACTIVATING_TIMEOUT_MS,
   firebaseCallableErrorMessage,
   formatExpiryDate,
   isCallableUnauthorized,
@@ -20,6 +21,10 @@ import {
   resolveSubscribePhase,
   type StripeEntitlementDoc,
 } from "../lib/subscribe/entitlementState";
+import {
+  parseCheckoutReturn,
+  stripCheckoutQueryFromLocation,
+} from "../lib/subscribe/checkoutReturn";
 
 function authErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -39,10 +44,15 @@ export default function Subscribe() {
   const [portalOfferSubscribe, setPortalOfferSubscribe] = useState(false);
   const [entitlementRetryToken, setEntitlementRetryToken] = useState(0);
   const [nowMillis, setNowMillis] = useState(() => Date.now());
+  const [checkoutActivating, setCheckoutActivating] = useState(false);
+  const [activatingStartedAtMillis, setActivatingStartedAtMillis] = useState<number | null>(
+    null,
+  );
+  const [pendingCheckoutSuccess, setPendingCheckoutSuccess] = useState(false);
 
   useEffect(() => {
     const refreshNow = () => setNowMillis(Date.now());
-    const intervalId = window.setInterval(refreshNow, 30_000);
+    const intervalId = window.setInterval(refreshNow, 1_000);
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         refreshNow();
@@ -60,6 +70,58 @@ export default function Subscribe() {
   const entitlementLoaded = !signedIn || entitlementDoc !== undefined;
   const authLoading = configured && user === undefined;
 
+  useEffect(() => {
+    const checkoutReturn = parseCheckoutReturn(window.location.search);
+    if (checkoutReturn == null) {
+      return;
+    }
+    const nextUrl = stripCheckoutQueryFromLocation(
+      window.location.pathname,
+      window.location.search,
+    );
+    window.history.replaceState(null, "", nextUrl);
+
+    if (checkoutReturn === "cancel") {
+      setCheckoutActivating(false);
+      setActivatingStartedAtMillis(null);
+      setPendingCheckoutSuccess(false);
+      setError(null);
+      return;
+    }
+
+    setPendingCheckoutSuccess(true);
+    setError(null);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingCheckoutSuccess || !signedIn) {
+      return;
+    }
+    setPendingCheckoutSuccess(false);
+    setCheckoutActivating(true);
+    setActivatingStartedAtMillis(Date.now());
+    setEntitlementLoadFailed(false);
+    setError(null);
+  }, [pendingCheckoutSuccess, signedIn]);
+
+  useEffect(() => {
+    if (!checkoutActivating || activatingStartedAtMillis == null) {
+      return;
+    }
+    const doc = entitlementDoc;
+    if (doc != null && isStripeEntitlementSubscribed(doc, nowMillis)) {
+      setCheckoutActivating(false);
+      setActivatingStartedAtMillis(null);
+      return;
+    }
+    if (nowMillis - activatingStartedAtMillis >= CHECKOUT_ACTIVATING_TIMEOUT_MS) {
+      setCheckoutActivating(false);
+      setActivatingStartedAtMillis(null);
+      setEntitlementLoadFailed(false);
+      setError(null);
+    }
+  }, [checkoutActivating, activatingStartedAtMillis, entitlementDoc, nowMillis]);
+
   const phase = useMemo(
     () =>
       resolveSubscribePhase({
@@ -68,7 +130,8 @@ export default function Subscribe() {
         entitlementLoaded,
         entitlementDoc: entitlementDoc ?? null,
         entitlementLoadFailed,
-        activating: false,
+        activating: checkoutActivating,
+        activatingStartedAtMillis,
         nowMillis,
       }),
     [
@@ -77,6 +140,8 @@ export default function Subscribe() {
       entitlementLoaded,
       entitlementDoc,
       entitlementLoadFailed,
+      checkoutActivating,
+      activatingStartedAtMillis,
       nowMillis,
     ],
   );
@@ -345,6 +410,18 @@ export default function Subscribe() {
               <button className="ghost-btn" type="button" onClick={retryEntitlementLoad}>
                 Retry
               </button>
+            </>
+          )}
+
+          {phase === "activating" && (
+            <>
+              <p role="status">
+                Finishing your subscription. This usually takes a moment while we confirm
+                payment.
+              </p>
+              <p style={{ color: "var(--muted)" }}>
+                Stay on this page. We will update when your subscription is active.
+              </p>
             </>
           )}
 

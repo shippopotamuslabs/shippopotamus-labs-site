@@ -1,3 +1,10 @@
+import {
+  CHECKOUT_ACTIVATING_TIMEOUT_MS,
+  isCheckoutActivatingTimedOut,
+} from "./checkoutReturn";
+
+export { CHECKOUT_ACTIVATING_TIMEOUT_MS, isCheckoutActivatingTimedOut };
+
 /** Stripe entitlement fields read from `users/{uid}/entitlement/stripe`. Never written from the web app. */
 export type StripeEntitlementDoc = {
   active?: boolean;
@@ -36,8 +43,9 @@ export type ResolveSubscribePhaseInput = {
   entitlementLoaded: boolean;
   entitlementDoc: StripeEntitlementDoc | null;
   entitlementLoadFailed: boolean;
-  /** Chunk 3 wires checkout query poll; stub only in Chunk 2. */
+  /** Post-checkout return: wait for webhook via Firestore listener until subscribed or timeout. */
   activating?: boolean;
+  activatingStartedAtMillis?: number | null;
   nowMillis: number;
 };
 
@@ -48,11 +56,19 @@ export function resolveSubscribePhase(input: ResolveSubscribePhaseInput): Subscr
   if (!input.signedIn) {
     return "signed-out";
   }
-  if (input.activating) {
-    return "activating";
-  }
-  if (input.entitlementLoadFailed) {
+  if (input.entitlementLoadFailed && !input.activating) {
     return "entitlement-error";
+  }
+  if (
+    input.activating &&
+    input.activatingStartedAtMillis != null &&
+    !isCheckoutActivatingTimedOut(input.activatingStartedAtMillis, input.nowMillis)
+  ) {
+    const doc = input.entitlementDoc;
+    if (doc != null && isStripeEntitlementSubscribed(doc, input.nowMillis)) {
+      return "subscribed";
+    }
+    return "activating";
   }
   if (!input.entitlementLoaded) {
     return "loading";

@@ -577,6 +577,24 @@ textarea:focus {
   word-break: break-all;
 }
 
+@media (max-width: 480px) {
+  .subscribe-panel {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .subscribe-panel .pill-btn,
+  .subscribe-panel .ghost-btn {
+    align-self: stretch;
+    min-height: 44px;
+    text-align: center;
+  }
+
+  .subscribe-panel .contact-card {
+    padding: 18px 16px;
+  }
+}
+
 .contact-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

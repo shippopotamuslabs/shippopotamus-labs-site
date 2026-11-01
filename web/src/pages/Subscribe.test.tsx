@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUser = { uid: "test-uid-123" };
@@ -52,6 +52,7 @@ describe("Subscribe page", () => {
     entitlementListener = undefined;
     vi.mocked(callCreateCheckoutSession).mockReset();
     vi.mocked(callCreatePortalSession).mockReset();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
@@ -65,7 +66,12 @@ describe("Subscribe page", () => {
       entitlementListener = listener;
       return () => {};
     });
-    vi.stubGlobal("location", { ...window.location, assign: vi.fn() });
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "",
+      assign: vi.fn(),
+    });
   });
 
   it("renders signed-out copy and Google sign-in when configured", async () => {
@@ -265,5 +271,75 @@ describe("Subscribe page", () => {
       /could not load subscription status/i,
     );
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("shows plain unsubscribed after checkout cancel with no error", async () => {
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=cancel",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+    emitEntitlement(null);
+
+    expect(await screen.findByText(/you do not have an active subscription/i)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(window.history.replaceState).toHaveBeenCalled();
+  });
+
+  it("shows activating after checkout success until entitlement is active", async () => {
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    expect(await screen.findByText(/finishing your subscription/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /your subscription is active/i })).toBeNull();
+    expect(screen.queryByText(/^Your subscription is active\.$/i)).toBeNull();
+
+    emitEntitlement({ active: true, expiryTimeMillis: Date.now() + 86_400_000 });
+
+    expect(await screen.findByText(/^Your subscription is active\.$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/finishing your subscription/i)).toBeNull();
+  });
+
+  it("returns to unsubscribed after activating timeout without claiming subscribed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText(/finishing your subscription/i)).toBeInTheDocument();
+    emitEntitlement(null);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(screen.getByText(/you do not have an active subscription/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Your subscription is active\.$/i)).toBeNull();
+    expect(screen.queryByText(/finishing your subscription/i)).toBeNull();
+
+    vi.useRealTimers();
   });
 });

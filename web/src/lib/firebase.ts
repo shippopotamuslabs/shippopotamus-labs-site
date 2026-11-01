@@ -21,6 +21,9 @@ let functions: Functions | undefined;
 const FIREBASE_FUNCTIONS_REGION = "us-central1";
 
 async function ensureFirebaseApp(config: NonNullable<ReturnType<typeof readFirebaseConfigFromEnv>>) {
+  if (app) {
+    return app;
+  }
   const { initializeApp, getApps } = await import("firebase/app");
   if (getApps().length === 0) {
     app = initializeApp(config);

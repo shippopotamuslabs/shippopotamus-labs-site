@@ -136,7 +136,6 @@ export default function Subscribe() {
     setActivatingStartedAtMillis(Date.now());
     setEntitlementLoadFailed(false);
     setError(null);
-    clearPersistedCheckoutReturn();
   }, [pendingCheckoutSuccess, signedIn]);
 
   useEffect(() => {
@@ -147,11 +146,13 @@ export default function Subscribe() {
     if (doc != null && isStripeEntitlementSubscribed(doc, nowMillis)) {
       setCheckoutActivating(false);
       setActivatingStartedAtMillis(null);
+      clearPersistedCheckoutReturn();
       return;
     }
     if (nowMillis - activatingStartedAtMillis >= CHECKOUT_ACTIVATING_TIMEOUT_MS) {
       setCheckoutActivating(false);
       setActivatingStartedAtMillis(null);
+      clearPersistedCheckoutReturn();
       setError(null);
       if (entitlementLoadFailed) {
         setEntitlementDoc(null);

@@ -426,7 +426,7 @@ describe("Subscribe page", () => {
     render(createElement(Subscribe));
 
     expect(await screen.findByText(/finishing your subscription/i)).toBeInTheDocument();
-    expect(sessionStorage.getItem(CHECKOUT_RETURN_SESSION_KEY)).toBeNull();
+    expect(sessionStorage.getItem(CHECKOUT_RETURN_SESSION_KEY)).toBe("success");
   });
 
   it("clears activating checkout state on sign out", async () => {

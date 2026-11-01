@@ -13,7 +13,7 @@ PATTERNS=(
   "sk_live"
   "sk_test"
   "whsec_"
-  "BEGIN PRIVATE"
+  "PRIVATE KEY"
   "firebase-admin"
 )
 

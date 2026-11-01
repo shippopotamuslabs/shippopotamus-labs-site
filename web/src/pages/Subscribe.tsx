@@ -66,7 +66,7 @@ export default function Subscribe() {
 
   useEffect(() => {
     const refreshNow = () => setNowMillis(Date.now());
-    const intervalId = window.setInterval(refreshNow, 1_000);
+    const intervalId = window.setInterval(refreshNow, 30_000);
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         refreshNow();
@@ -147,29 +147,36 @@ export default function Subscribe() {
       setCheckoutActivating(false);
       setActivatingStartedAtMillis(null);
       clearPersistedCheckoutReturn();
+    }
+  }, [checkoutActivating, activatingStartedAtMillis, entitlementDoc, nowMillis]);
+
+  useEffect(() => {
+    if (!checkoutActivating || activatingStartedAtMillis == null) {
       return;
     }
-    if (nowMillis - activatingStartedAtMillis >= CHECKOUT_ACTIVATING_TIMEOUT_MS) {
+    const startedAt = activatingStartedAtMillis;
+    const remainingMs = CHECKOUT_ACTIVATING_TIMEOUT_MS - (Date.now() - startedAt);
+    const finishActivatingTimeout = () => {
       setCheckoutActivating(false);
       setActivatingStartedAtMillis(null);
       clearPersistedCheckoutReturn();
       setError(null);
-      if (entitlementLoadFailed) {
-        setEntitlementDoc(null);
-      } else if (entitlementDoc === undefined) {
-        setEntitlementDoc(null);
-        setEntitlementLoadFailed(false);
-      } else {
-        setEntitlementLoadFailed(false);
-      }
+      setEntitlementLoadFailed((loadFailed) => {
+        if (loadFailed) {
+          setEntitlementDoc(null);
+          return true;
+        }
+        setEntitlementDoc((doc) => (doc === undefined ? null : doc));
+        return false;
+      });
+    };
+    if (remainingMs <= 0) {
+      finishActivatingTimeout();
+      return;
     }
-  }, [
-    checkoutActivating,
-    activatingStartedAtMillis,
-    entitlementDoc,
-    entitlementLoadFailed,
-    nowMillis,
-  ]);
+    const timeoutId = window.setTimeout(finishActivatingTimeout, remainingMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [checkoutActivating, activatingStartedAtMillis]);
 
   const phase = useMemo(
     () =>

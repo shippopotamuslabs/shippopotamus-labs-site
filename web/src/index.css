@@ -587,3 +587,36 @@ textarea:focus {
   margin-bottom: 6px;
   font-size: 1.03rem;
 }
+
+.legal {
+  max-width: 760px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.legal h2 {
+  font-size: 1.15rem;
+  margin: 28px 0 8px;
+  color: var(--text);
+}
+
+.legal p {
+  margin: 0 0 12px;
+}
+
+.legal ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.legal li {
+  margin-bottom: 6px;
+}
+
+.legal strong {
+  color: var(--text);
+}
+
+.legal a {
+  color: var(--accent);
+}

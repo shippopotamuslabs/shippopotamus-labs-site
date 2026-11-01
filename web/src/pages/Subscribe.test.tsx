@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUser = { uid: "test-uid-123" };
@@ -32,7 +32,12 @@ import {
   isFirebaseConfigured,
   listenToAuthState,
   listenToStripeEntitlement,
+  signOutFirebase,
 } from "../lib/firebase";
+import {
+  CHECKOUT_RETURN_SESSION_KEY,
+  persistCheckoutReturn,
+} from "../lib/subscribe/checkoutReturn";
 import Subscribe from "./Subscribe";
 
 function mockSignedIn() {
@@ -41,6 +46,8 @@ function mockSignedIn() {
     return () => {};
   });
 }
+
+let authListener: ((user: typeof mockUser | null) => void) | undefined;
 
 function emitEntitlement(doc: unknown) {
   entitlementListener?.(doc);
@@ -52,9 +59,12 @@ describe("Subscribe page", () => {
     entitlementListener = undefined;
     vi.mocked(callCreateCheckoutSession).mockReset();
     vi.mocked(callCreatePortalSession).mockReset();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
+    sessionStorage.clear();
+    authListener = undefined;
     vi.mocked(isFirebaseConfigured).mockImplementation(() => true);
     vi.mocked(completeGoogleRedirectSignIn).mockResolvedValue(null);
     vi.mocked(listenToAuthState).mockImplementation(async (listener) => {
@@ -65,7 +75,12 @@ describe("Subscribe page", () => {
       entitlementListener = listener;
       return () => {};
     });
-    vi.stubGlobal("location", { ...window.location, assign: vi.fn() });
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "",
+      assign: vi.fn(),
+    });
   });
 
   it("renders signed-out copy and Google sign-in when configured", async () => {
@@ -265,5 +280,186 @@ describe("Subscribe page", () => {
       /could not load subscription status/i,
     );
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("shows plain unsubscribed after checkout cancel with no error", async () => {
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=cancel",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+    emitEntitlement(null);
+
+    expect(await screen.findByText(/you do not have an active subscription/i)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(window.history.replaceState).toHaveBeenCalled();
+  });
+
+  it("shows activating after checkout success until entitlement is active", async () => {
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    expect(await screen.findByText(/finishing your subscription/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /your subscription is active/i })).toBeNull();
+    expect(screen.queryByText(/^Your subscription is active\.$/i)).toBeNull();
+
+    emitEntitlement({ active: true, expiryTimeMillis: Date.now() + 86_400_000 });
+
+    expect(await screen.findByText(/^Your subscription is active\.$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/finishing your subscription/i)).toBeNull();
+  });
+
+  it("returns to unsubscribed after activating timeout without claiming subscribed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText(/finishing your subscription/i)).toBeInTheDocument();
+    emitEntitlement(null);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(screen.getByText(/you do not have an active subscription/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Your subscription is active\.$/i)).toBeNull();
+    expect(screen.queryByText(/finishing your subscription/i)).toBeNull();
+
+    vi.useRealTimers();
+  });
+
+  it("shows unsubscribed after activating timeout when entitlement never loads", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText(/finishing your subscription/i)).toBeInTheDocument();
+    expect(screen.queryByText(/loading subscription status/i)).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(screen.getByText(/you do not have an active subscription/i)).toBeInTheDocument();
+    expect(screen.queryByText(/loading subscription status/i)).toBeNull();
+
+    vi.useRealTimers();
+  });
+
+  it("shows entitlement retry after activating timeout when Firestore listen failed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    entitlementListener?.(undefined, new Error("Firestore denied"));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/could not load subscription status/i);
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    expect(screen.queryByText(/loading subscription status/i)).toBeNull();
+
+    vi.useRealTimers();
+  });
+
+  it("arms activating from sessionStorage after checkout query was stripped (StrictMode remount)", async () => {
+    persistCheckoutReturn("success");
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "",
+      assign: vi.fn(),
+    });
+    mockSignedIn();
+    render(createElement(Subscribe));
+
+    expect(await screen.findByText(/finishing your subscription/i)).toBeInTheDocument();
+    expect(sessionStorage.getItem(CHECKOUT_RETURN_SESSION_KEY)).toBe("success");
+  });
+
+  it("clears activating checkout state on sign out", async () => {
+    vi.stubGlobal("location", {
+      ...window.location,
+      pathname: "/enclave/subscribe",
+      search: "?checkout=success",
+      assign: vi.fn(),
+    });
+    vi.stubGlobal("history", { ...window.history, replaceState: vi.fn() });
+    vi.mocked(signOutFirebase).mockResolvedValue(undefined);
+    vi.mocked(listenToAuthState).mockImplementation(async (listener) => {
+      authListener = listener;
+      listener(mockUser as never);
+      return () => {};
+    });
+
+    render(createElement(Subscribe));
+    expect(await screen.findByText(/finishing your subscription/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    await act(async () => {
+      authListener?.(null);
+    });
+
+    expect(sessionStorage.getItem(CHECKOUT_RETURN_SESSION_KEY)).toBeNull();
+
+    await act(async () => {
+      authListener?.(mockUser as never);
+    });
+    emitEntitlement(null);
+
+    expect(await screen.findByText(/you do not have an active subscription/i)).toBeInTheDocument();
+    expect(screen.queryByText(/finishing your subscription/i)).toBeNull();
   });
 });

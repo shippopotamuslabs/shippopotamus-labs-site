@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CHECKOUT_ACTIVATING_TIMEOUT_MS,
   formatExpiryDate,
   isPortalNoCustomerError,
   isStripeEntitlementSubscribed,
@@ -98,12 +99,48 @@ describe("resolveSubscribePhase", () => {
     ).toBe("lapsed");
   });
 
-  it("returns activating when activating flag is set (Chunk 3 stub)", () => {
+  it("returns activating while waiting for entitlement after checkout", () => {
     expect(
       resolveSubscribePhase({
         ...base,
         activating: true,
+        activatingStartedAtMillis: NOW,
+        entitlementLoaded: false,
+        entitlementDoc: null,
+      }),
+    ).toBe("activating");
+  });
+
+  it("returns subscribed during activating once the doc is active", () => {
+    expect(
+      resolveSubscribePhase({
+        ...base,
+        activating: true,
+        activatingStartedAtMillis: NOW,
         entitlementDoc: { active: true, expiryTimeMillis: FUTURE },
+      }),
+    ).toBe("subscribed");
+  });
+
+  it("returns unsubscribed after activating times out with no doc", () => {
+    expect(
+      resolveSubscribePhase({
+        ...base,
+        activating: true,
+        activatingStartedAtMillis: NOW - CHECKOUT_ACTIVATING_TIMEOUT_MS,
+        entitlementDoc: null,
+      }),
+    ).toBe("unsubscribed");
+  });
+
+  it("does not show entitlement-error while activating", () => {
+    expect(
+      resolveSubscribePhase({
+        ...base,
+        activating: true,
+        activatingStartedAtMillis: NOW,
+        entitlementLoadFailed: true,
+        entitlementDoc: null,
       }),
     ).toBe("activating");
   });

@@ -12,6 +12,7 @@ import {
   signOutFirebase,
 } from "../lib/firebase";
 import {
+  CHECKOUT_ACTIVATING_TIMEOUT_MS,
   firebaseCallableErrorMessage,
   formatExpiryDate,
   isCallableUnauthorized,
@@ -20,9 +21,27 @@ import {
   resolveSubscribePhase,
   type StripeEntitlementDoc,
 } from "../lib/subscribe/entitlementState";
+import {
+  clearPersistedCheckoutReturn,
+  parseCheckoutReturn,
+  persistCheckoutReturn,
+  readPersistedCheckoutReturn,
+  stripCheckoutQueryFromLocation,
+} from "../lib/subscribe/checkoutReturn";
 
 function authErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+function clearCheckoutReturnUiState(setters: {
+  setCheckoutActivating: (value: boolean) => void;
+  setActivatingStartedAtMillis: (value: number | null) => void;
+  setPendingCheckoutSuccess: (value: boolean) => void;
+}) {
+  setters.setCheckoutActivating(false);
+  setters.setActivatingStartedAtMillis(null);
+  setters.setPendingCheckoutSuccess(false);
+  clearPersistedCheckoutReturn();
 }
 
 export default function Subscribe() {
@@ -39,6 +58,11 @@ export default function Subscribe() {
   const [portalOfferSubscribe, setPortalOfferSubscribe] = useState(false);
   const [entitlementRetryToken, setEntitlementRetryToken] = useState(0);
   const [nowMillis, setNowMillis] = useState(() => Date.now());
+  const [checkoutActivating, setCheckoutActivating] = useState(false);
+  const [activatingStartedAtMillis, setActivatingStartedAtMillis] = useState<number | null>(
+    null,
+  );
+  const [pendingCheckoutSuccess, setPendingCheckoutSuccess] = useState(false);
 
   useEffect(() => {
     const refreshNow = () => setNowMillis(Date.now());
@@ -60,6 +84,100 @@ export default function Subscribe() {
   const entitlementLoaded = !signedIn || entitlementDoc !== undefined;
   const authLoading = configured && user === undefined;
 
+  useEffect(() => {
+    const fromQuery = parseCheckoutReturn(window.location.search);
+    if (fromQuery != null) {
+      persistCheckoutReturn(fromQuery);
+      const nextUrl = stripCheckoutQueryFromLocation(
+        window.location.pathname,
+        window.location.search,
+      );
+      window.history.replaceState(null, "", nextUrl);
+    }
+
+    const checkoutReturn = fromQuery ?? readPersistedCheckoutReturn();
+    if (checkoutReturn == null) {
+      return;
+    }
+
+    if (checkoutReturn === "cancel") {
+      clearCheckoutReturnUiState({
+        setCheckoutActivating,
+        setActivatingStartedAtMillis,
+        setPendingCheckoutSuccess,
+      });
+      setError(null);
+      return;
+    }
+
+    setPendingCheckoutSuccess(true);
+    setError(null);
+  }, []);
+
+  useEffect(() => {
+    if (user !== null) {
+      return;
+    }
+    if (user === null) {
+      clearCheckoutReturnUiState({
+        setCheckoutActivating,
+        setActivatingStartedAtMillis,
+        setPendingCheckoutSuccess,
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!pendingCheckoutSuccess || !signedIn) {
+      return;
+    }
+    setPendingCheckoutSuccess(false);
+    setCheckoutActivating(true);
+    setActivatingStartedAtMillis(Date.now());
+    setEntitlementLoadFailed(false);
+    setError(null);
+  }, [pendingCheckoutSuccess, signedIn]);
+
+  useEffect(() => {
+    if (!checkoutActivating || activatingStartedAtMillis == null) {
+      return;
+    }
+    const doc = entitlementDoc;
+    if (doc != null && isStripeEntitlementSubscribed(doc, nowMillis)) {
+      setCheckoutActivating(false);
+      setActivatingStartedAtMillis(null);
+      clearPersistedCheckoutReturn();
+    }
+  }, [checkoutActivating, activatingStartedAtMillis, entitlementDoc, nowMillis]);
+
+  useEffect(() => {
+    if (!checkoutActivating || activatingStartedAtMillis == null) {
+      return;
+    }
+    const startedAt = activatingStartedAtMillis;
+    const remainingMs = CHECKOUT_ACTIVATING_TIMEOUT_MS - (Date.now() - startedAt);
+    const finishActivatingTimeout = () => {
+      setCheckoutActivating(false);
+      setActivatingStartedAtMillis(null);
+      clearPersistedCheckoutReturn();
+      setError(null);
+      setEntitlementLoadFailed((loadFailed) => {
+        if (loadFailed) {
+          setEntitlementDoc(null);
+          return true;
+        }
+        setEntitlementDoc((doc) => (doc === undefined ? null : doc));
+        return false;
+      });
+    };
+    if (remainingMs <= 0) {
+      finishActivatingTimeout();
+      return;
+    }
+    const timeoutId = window.setTimeout(finishActivatingTimeout, remainingMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [checkoutActivating, activatingStartedAtMillis]);
+
   const phase = useMemo(
     () =>
       resolveSubscribePhase({
@@ -68,7 +186,8 @@ export default function Subscribe() {
         entitlementLoaded,
         entitlementDoc: entitlementDoc ?? null,
         entitlementLoadFailed,
-        activating: false,
+        activating: checkoutActivating,
+        activatingStartedAtMillis,
         nowMillis,
       }),
     [
@@ -77,6 +196,8 @@ export default function Subscribe() {
       entitlementLoaded,
       entitlementDoc,
       entitlementLoadFailed,
+      checkoutActivating,
+      activatingStartedAtMillis,
       nowMillis,
     ],
   );
@@ -192,6 +313,11 @@ export default function Subscribe() {
   async function handleSignOut() {
     setError(null);
     setPortalOfferSubscribe(false);
+    clearCheckoutReturnUiState({
+      setCheckoutActivating,
+      setActivatingStartedAtMillis,
+      setPendingCheckoutSuccess,
+    });
     try {
       await signOutFirebase();
     } catch (e) {
@@ -345,6 +471,18 @@ export default function Subscribe() {
               <button className="ghost-btn" type="button" onClick={retryEntitlementLoad}>
                 Retry
               </button>
+            </>
+          )}
+
+          {phase === "activating" && (
+            <>
+              <p role="status">
+                Finishing your subscription. This usually takes a moment while we confirm
+                payment.
+              </p>
+              <p style={{ color: "var(--muted)" }}>
+                Stay on this page. We will update when your subscription is active.
+              </p>
             </>
           )}
 

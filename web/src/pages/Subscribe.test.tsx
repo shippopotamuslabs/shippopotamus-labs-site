@@ -88,6 +88,34 @@ describe("Subscribe page", () => {
     expect(screen.queryByRole("button", { name: /sign in with google/i })).toBeNull();
   });
 
+  it("clears redirect sign-in error once auth delivers a user", async () => {
+    const redirectError = new Error(
+      "Could not finish Google sign-in after redirect. Try again.",
+    );
+    vi.mocked(completeGoogleRedirectSignIn).mockRejectedValueOnce(redirectError);
+
+    let deliverAuth: ((user: typeof mockUser | null) => void) | undefined;
+    vi.mocked(listenToAuthState).mockImplementation(async (listener) => {
+      deliverAuth = listener;
+      listener(null);
+      return () => {};
+    });
+
+    render(createElement(Subscribe));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(redirectError.message);
+    });
+
+    deliverAuth!(mockUser as never);
+    expect(await screen.findByText(/^Account id:/i)).toBeInTheDocument();
+    emitEntitlement(null);
+    await waitFor(() => {
+      expect(screen.getByText(/you do not have an active subscription/i)).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+  });
+
   it("shows an error instead of spinning when auth state listen fails", async () => {
     vi.mocked(listenToAuthState).mockRejectedValueOnce(new Error("Auth unavailable"));
 

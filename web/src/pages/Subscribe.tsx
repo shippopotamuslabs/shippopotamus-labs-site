@@ -100,6 +100,9 @@ export default function Subscribe() {
 
     void listenToAuthState((next) => {
       if (!cancelled) {
+        if (next) {
+          setError(null);
+        }
         setUser(next);
       }
     })
